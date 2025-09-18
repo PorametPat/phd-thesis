@@ -1,0 +1,17 @@
+{
+	"Python Code Block": {
+		"prefix": "py",
+		"body": [
+			"```python",
+			"$1",
+			"```"
+		],
+		"description": "Insert a Python code block"
+	},
+    "Inline Code": {
+        "prefix": "c",
+        "body": [
+            "`$1`"
+        ]
+    }
+}
