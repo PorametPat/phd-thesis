@@ -439,6 +439,15 @@ In the best case scenario, with optimal predictive model $bb(E)_(x,y)[cal(L)_"SE
 We would like to highlight that the LHS of @eq:agf-bound-alt is the difference between the model prediction and the exact experimental value, and is not the difference between the model prediction and the finite-shot experimental value.
 These analytically derived bounds in @eq:var-data, @eq:before, and @eq:agf-bound-alt confirm the observed behaviour in @youssryMultiaxisControlQubit2023.
 
+Given the expected #mseeloss, we visualize the scaling of the performance bound in @fig:bound_mse_plot. We can choose to stop the model training afford when the criteria is reach. 
+
+#figure(
+  image("../figures/fig_bound_mse_plot.svg"),
+  caption: [
+    Plot of the performance bound in terms of optimality. The x-coordinate of annotate tuples is the expected #mseeloss, while the y-coordinate is the corresponding performance bound.
+  ],
+) <fig:bound_mse_plot>
+
 
 == The Way of Probabilistic Machine Learning <sec:pml-way>
 
@@ -514,7 +523,9 @@ Depends on the statistical learning method of choice, the PBM implementation may
 Promoting @dnn to @bnn seems like an upgrade in a first grace, however, in pratice, @bnn might not necessary always perform better than @dnn. From @jospinHandsOnBayesianNeural2022, they states that @bnn can learn small sample size without overfit. If true, it would be highly benefical to the quantum device characterization, since performing experiment to collect data points is expensive.
 
 #task[
-  Todo
+  #todocontinue[
+    Insert section 2B from paper 2 when the paper is submitted.
+  ]
   + For 1000 sample size
     + Do SGM with WoBased and Unitary
     + Do PML with WoBased and Unitary
@@ -567,6 +578,9 @@ From @eq:var-data, we can estimate the optimality of the predictive model. In th
 
 Alternatively, from @eq:var-data, we can estimate the quantity by sampling the control parameters $x_1$ first, then perform experiments multiple times with the control parameters to collect the sample $y$ from the conditional distribution $p(y|x_1)$. We then repeated with $x_2, ..., x_m$ to approximate the joint $p(x, y)$. With this method, we form the specialized dataset such that, we can also benchmark the model performance using probability distribution measures such as @jsd in addition to the optimality of the model. In the @sec:boed-experiment, we will disucss the use of the data-variance approach in the device characterization experiment.
 
+=== Bayesian Optimization approach
+
+While, a Bayesian optimization is initially design for Gaussian process, it might possible to adapt the algorithm and mathematical model to the probabilistic model such as Graybox model. For example, an expected improvement, one of the acquisition functions, need the mean and variance of the observations, and the observed best observation to calculate the metric @kamperisAcquisitionFunctionsBayesian2021. So we can use the probabilistic Graybox as a surrogate model. Then the function to be optimized is a function of distance between distributions. This approach require a specialized dataset to implement. 
 
 // #let caution-rect = rect.with(inset: 1em, radius: 0.5em)
 // #inline-note(rect: caution-rect, fill: orange.lighten(80%))[

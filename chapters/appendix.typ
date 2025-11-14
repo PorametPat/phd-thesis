@@ -290,3 +290,51 @@ $
   "Var"(tilde(expval(hat(O)))_(rho_0)) &= 1/n^2 n (1- mu_0^2) = 1/n (1-mu_0^2).
 $
 This is similar to the variance of estimator in the deterministic case where it is depends only the mean of the intermediate expectation value and independent of variance! 
+
+= Rotating Frame
+
+The unitary transformation,
+$
+  H -> U H U^(dagger) + i dot(U) U^(dagger)
+$
+Let us define $a_0 = 2 pi omega_q$ and $a_1 = 2 pi Omega$
+$
+  H(t) = a_0 / 2 hat(sigma)_(z) + a_(1) s(t) hat(sigma)_x
+$
+
+With the frame 
+$
+  U_(0) = exp( i a_(0)/2  hat(sigma)_z t )
+$
+We have
+$
+  dot(U)_(0) = diff / (diff t) U_(0) = i (a_(0))/2 hat(sigma)_z U_(0),
+$
+and 
+$
+  i dot(U)_(0) U_(0)^(dagger) = - (a_(0))/2 hat(sigma)_z.
+$
+And also
+$
+  U_(0) H U_(0)^(dagger) &= U_(0) (a_0 / 2 hat(sigma)_(z) + a_(1) s(t) hat(sigma)_x) U_(0)^(dagger) \
+  &= a_(0)/2 sigma_z + a_1 s(t) U_(0) hat(sigma)_x U_(0)^(dagger)
+$
+Consider the term $U_(0) hat(sigma)_x U_(0)^(dagger)$ and define $a' = a_0/2 t$, we have,
+$
+  U_(0) hat(sigma)_x U_(0)^(dagger) =& (cos(a') I + i sin(a') hat(sigma)_z ) hat(sigma)_x (cos(a') I - i sin(a') hat(sigma)_z ) \
+  =& cos^2(a') hat(sigma)_x - i cos(a') sin(a') hat(sigma)_x  hat(sigma)_z \
+  &+ i sin(a') cos(a') hat(sigma)_z hat(sigma)_x + sin^2(a') hat(sigma)_z hat(sigma)_x  hat(sigma)_z
+$
+We use the fact that $hat(sigma)_y = i hat(sigma)_x hat(sigma)_z$ and $hat(sigma)_x hat(sigma)_z = - hat(sigma)_z hat(sigma)_x$, to simplify above to
+$
+  U_(0) hat(sigma)_x U_(0)^(dagger) =& cos^2(a') hat(sigma)_x - 2 cos(a') sin(a') hat(sigma)_y - sin^2(a') hat(sigma)_x \
+  =& (cos^2(a') - sin^2(a')) hat(sigma)_x - 2 cos(a') sin(a') hat(sigma)_y.
+$
+Then with identities $cos(2x) = cos^2(x) - sin^2(x)$ and $sin(2x) = 2 cos(x) sin(x)$, we get
+$
+  U_(0) hat(sigma)_x U_(0)^(dagger) =& cos(2a') hat(sigma)_x - sin(2a') hat(sigma)_y
+$
+Finally, 
+$
+  H_("rot") = U_0 H U_0^(dagger) + i dot(U_0) U_0^(dagger) = a_1 s(t) (cos(a_0 t) hat(sigma)_x - sin(a_0 t) hat(sigma)_y)
+$

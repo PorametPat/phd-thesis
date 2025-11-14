@@ -238,6 +238,13 @@ The benefits of the functional style of `jax` will become apparent as we continu
   The assumption of the control module is that, the control is a function of at least time, other parameters are refered to as control parameters. Moreover, to support the different arbitrary shape of control composing together, the user can define their atomic #class[`Control`] classes, and compose them together via a single #class[`ControlSequence`] object.
 ]
 
+#spec[
+  + Represent the control function of the quantum device. 
+  + Be able to convert the vector of the control parameter to the vector control simulable by #modu[`physics`]'s solver. 
+  + User can sample the control parameter from the control instance. 
+  + Provide a conversion between structured data type and array type for readable serialization and ready to used by machine learning framework. 
+]
+
 The control of the quantum device depends on the system's physical realization. To model the possibility of control, we implement a base class, `BaseControl`, intended for developer to inherit from it with their implementation. Then, the defined control, denoted #class[`Control`], can be used via a unified interface, implemented via #class[`ControlSequence`]. Within the sequence, the developer can mix different types of #class[`Control`].
 
 As an illustrative example, in the superconducting qubit platform, a classical control field has a finite resolution of $Delta t$ , we consider a Gaussian envelope control with a max amplitude of $A_m$, drive strength of $Omega$, a standard deviation of $sigma = sqrt(2 pi) / (A_m dot.op 2 pi dot.op Omega dot.op "dt")$, total area of $theta$ and the amplitude of $A = theta / (2 pi dot.op Omega dot.op "dt")$. The envelope is defined as
@@ -331,7 +338,7 @@ Then, the sample can be use for experiment, and model selection. The data struct
 
 We decide to implement control module revolving the class object because we have to standardize a way to structure the control parameters and consequently, how to properly save and load them on disk for later utilization. It is also serve as a way to perform automatic validation for the user at the instantiated time, which intented to help user detect potential bugs before proceed further.
 
-
+During the time of writing this thesis, an improved approach to #modu[`control`] is being developed in the same sub-module name, #modu[`control`] but within #modu[`v2`] namespace. The new approach store the atomic controls using dictionary instead of a list. This design decision maintain the order of the atomic controlled by the internal structure created automatically during object initialization. During the object serialization, we also save the structure of the control and read it back when we load the control from a given saved file. User can manually overwrite or provide a custom structure of the control as well. Instead of #func[`list_of_params_to_array`] and #func[`array_to_list_of_params`], the `v2.control` use #func[`ravel_fn`] and #func[`unravel_fn`] returned by #func[`ravel_unravel_fn`] given control instead. 
 
 == Data
 #tldr[
@@ -401,6 +408,10 @@ User can save and load the #class[`ExperimnetData`] from and to folder directly 
 
 === Operator, State, and Expectation Value
 Throughout the characterization and calibration process, the user will often has to repeatedly access to observable $hat(O)$ and initial state $rho_0$ both in terms of its string and matrix representation. `ExpectationValue` is an object that standardize way to interact with the mathematical definition of expectation value of quantum observable $expval(hat(O))_rho_0$ in `inspeqtor`. User can access string representation via `initial_state` and `observable`, and matrix representation via `initial_statevector`, `initial_density_matrix`, and `observable_matrix`. However, user will rarely has to directly instantiate the `ExpectationValue` object. We expect the user to interact with them via a predefined list of `ExpectationValue`, defined in `constant.default_expectation_values_order`. The list is a default order of the expectation values that used throughout `inspeqtor`, since we always have to loop over the combinations of the expectation values.
+
+=== `v2` Implementation
+
+To accompy the propose `v2` implementation of #modu[`control`], we also redesign the #class[`ExperimentData`] and #class[`ExperimentConfig`] as well. While #class[`ExperimentConfig`] remain relatively the same, the major change of #class[`ExperimentData`] is that we now keep the dataframe of the control parameter and the observed data separately. Furthermore, we also use `polars` instead of `pandas` for dataframe manipulation, since it is faster and easier to use. The data conversion can be done efficiently using `jax.vmap` of `ravel_fn` and `unravel_fn`. We also design the #class[`v2.data.ExperimentData`] while keeping scaling to more than one qubit system data handling in mind. The assumption of storing expectation value data is removed, allows user to defined their own experimental observation. The #modu[`data`] becomes an interface between the experiment on real device and the local characterization process. 
 
 === Data flow
 
@@ -612,6 +623,7 @@ We separate the opitmization baked in the `inspeqtor` into two types depending o
   + Support gradient-based optimization algorithm.
   + Support minimization of stochastic function.
   + Support bounded and unbounded optimization.
+  + Support Blackbox optimization.
 ]
 
 
@@ -654,6 +666,9 @@ res = sq.optimize.minimize(
 
 For the #func[`stochastic_minimize`], the loss function receives two arguments. The first argument is the function parameters. The second parameter is a random key.
 
+=== Bayesian Oprimization.
+
+We also support an optimization of Blackbox function, i.e. non-gradient optimization via Bayesian Opitmization. By default, the flow will try to maximize the function. We use #pkg[gpjax] @pinderGPJaxGaussianProcess2022 for Gaussian Process computation, and we built on the algorithms in #pkg[bayex] @alonsoAlonfntBayex2025. 
 
 
 === Control calibration process

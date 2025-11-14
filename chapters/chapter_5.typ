@@ -422,69 +422,49 @@ The study setting is the same as appraoches discussed previously with an modific
   caption: [The sequence diagram of the subspace strategy. ],
 ) <fig:subspace-flow>
 
+3. *Alternative strategy*: Using an insight from subspace and random strategy, we also consider the alternative strategy which first select the control using subspace strategy, then use random for the next round. This strategy is motivated by the observation that subspace strategy can select a good first batches of the control to boost the performance of the model ahead of random strategy. However, after the long sequence, random sequence is able to catch up. Thus, it is interesting to consider the best of both worlds.
+
 Since @bnn is capable of learning from small dataset, we focus on a few sample dataset compare to the `sample_size = 1000` used in the previous approaches. Here, we set the maximum sample size to `50` samples. With 10 sequential experiments, we collect 5 samples for each consecutive experiment.
 
+For the subspace strategy, we illustrate how do we select the next experimental designs based on the @eig in @fig:eig-example. The plot is one of realization of the sequential experiments. We plot the histogram of selected control parameters across the strategies in @fig:control-histogram.
 
-For the subspace strategy, we illustrate how do we select the next experimental designs based on the @eig in @fig:eig-example. The plot is one of the sequential experiments that make up the data later.
-We notice that, the choice of the designs may affect the subsequent @eig. We plot the histogram of selected control parameters across the subspace strategy in @fig:control-histogram.
+// #let (display, result, source, output, outputs, Cell, cell) = callisto.config(
+//   nb: json("../code/chapter-5-strategies/note_0010_visualization_v2.ipynb"),
+// )
 
 #let (display, result, source, output, outputs, Cell, cell) = callisto.config(
-  nb: json("../code/chapter-5-strategies/note_0010_visualization_v2.ipynb"),
+  nb: json("../code/chapter-5-strategies-v2/note_0004_visualization_polars.ipynb"),
 )
 
 #figure(
-  //   image("../figures/fig_eig_example.svg"),
-  result("subspace_selection"),
+    // image("placeholder.png"),
+  output("subspace_selection"),
   caption: [
     An example of @eig for each control parameter throughout the sequential experiments and characterization. The red points are the selected control parameters at the current step. The gray points are the selected control parameters in the previous step.
   ],
 ) <fig:eig-example>
 
 #figure(
-  result("control_histogram"),
+  output("control_histogram"),
+  // image("placeholder.png"),
   caption: [
     The histogram of the control parameters selected by the subspace strategy across 10 trajectories.
   ],
 ) <fig:control-histogram>
 
-We repeatedly perform sequential experiments for 10 times to compare the performance statistics. We test on multiple control parameters which is basically the specialized testing dataset dicussed in @sec:data-variance-approach. The figure summarize the benchmark results comparing @jsd and $cal(L)_("MSE[E]")$ of the model train using dataset obtained from random and subspace strategy is presented in @fig:compare-subspace-random. We chose test control parameters $theta = {0^degree, 72^degree, 144^degree, 216^degree, 288^degree, 360^degree}$. We observe that for the values of $theta = {0^degree, 360^degree}$, both models predict the distribution poorly. Especially, for $theta = 0^degree$, subspace model performs worst. To further compare each test control parameter between strategies, we refer to @fig:compare-subspace-random-jsd-each-control and @fig:compare-subspace-random-mse-each-control for each metric. We can observe that although not substaintially, suspace model yield a better prediction than the random model prediction in the first 20 sample sizes for the @jsd and MSE metrics. Later, both models yields similar results, except for $theta = {0^degree, 360^degree}$.
+We repeatedly perform sequential experiments for 10 times to compare the performance statistics. We test on multiple control parameters which is basically the specialized testing dataset dicussed in @sec:data-variance-approach. The figure summarize the benchmark results comparing @jsd of the model train using dataset obtained from random and subspace strategy is presented in @fig:compare-strategies. 
+We chose test control parameters $theta = {0.0^degree, 35.7^degree, 71.7^degree, 107.7^degree, 143.8^degree, 179.8^degree, 215.9^degree, 251.9^degree, 287.9^degree, 324.0^degree, 360.0^degree}$. 
 
 #figure(
-  result("bound_mse_plot"),
+  output("compare_strategies"),
+  // image("placeholder.png"),
   caption: [
-    Plot of the performance bound in terms of optimality. The x-coordinate of annotate tuples is the expected #mseeloss, while the y-coordinate is the corresponding performance bound.
+    The @jsd and at difference sample size. We perform 10 realizations of random, subspace, and alternative strageties and plot the mean as a solid line. Each realization use different random seed.
   ],
-) <fig:bound_mse_plot>
-
-#task[
-  1. #todocontinue[Conclude how to choose MSE or JSD]
-]
-
-In @sec:route-to-data-efficient, we discussed the possbile routes toward the data-efficient characterization. With the specialized testing dataset, we can now measure the @jsd in addition to the optimality. With the optimality, we can calculate the performance bound which we plot the upper bound in @fig:bound_mse_plot. 
+) <fig:compare-strategies>
 
 
-#figure(
-  result("compare_metrics"),
-  caption: [
-    The @jsd and $cal(L)_("MSE[E]")$ at difference sample size. We perform 10 realizations of random and subspace strageties and plot the mean as a solid line with confidence interval at 95% as an error bar. Each realization use different random seed.
-  ],
-) <fig:compare-subspace-random>
-
-#figure(
-  result("compare_jsd_controls"),
-  caption: [
-    The @jsd at difference sample size. We perform 10 realizations of random and subspace strageties and plot the mean as a solid line with confidence interval at 95% as an error bar. Each realization use different random seed.
-  ],
-) <fig:compare-subspace-random-jsd-each-control>
-
-#figure(
-  result("compare_mse_controls"),
-  caption: [
-    The @jsd at difference sample size. We perform 10 realizations of random and subspace strageties and plot the mean as a solid line with confidence interval at 95% as an error bar. Each realization use different random seed.
-  ],
-) <fig:compare-subspace-random-mse-each-control>
-
-There are serveral possibilities that may cause the probabilistic model to generalized poorly at the edges. (1) Generating dataset by subspace strategy cause the bias toward the "right" of each subspace, so the prediction might learn mostly from the "middle" of the global space. Especially, at the $theta = 0^degree$, that the subspace model clearly perform bad. Thus, this problem might happen due to the combinations of choices of both control and the strategy. (2) Since the predictive performce of random model also bad at the $theta = 0^degree$ as well, albeit not as bad as the strategy model, the problem might also come from the choice of model architecture.
+We can see from the result in @fig:compare-strategies that subspace strategy can consistancy choose control parameters (i.e. experimental design) that allows model to have performance better than a random strategy on the first few batches. From @fig:eig-example and @fig:control-histogram, we can observe that subspace strategy actively select control parameters near $theta = { 0^degree, 90^degree, 180^degree, 270^degree, 360^degree }$. These subspace dataset is a good starter dataset which allow model to start at a good initial model parameters. However, since the landscape of the @eig does not change significantly, the choice of experiment designs are concentrate at the same points. Consequently, there is no significant performance improvement with additional samples. On the other hand, the random strategy catch up and perform better after more data are collected. However, this strategies does not perfom well at the $theta = 0^degree$ compare to subspace which deliberately choose $theta = 0^degree$. So we consider the alternative strategy with subspace as a first in the sequence. We observe the improvement of the model performance conpare to the pure subspace strategy. The alternative strategy manage to perform well at $theta = 0^degree$ similar to subspace strategy, while we can improve the performance of the model with more samples. Although the improvement is not significant and the random strategy can produce the model that could catch up after more samples, we can see that subspace strategy allow for a better start than random strategy. Furthermore, with alternative strategy, we can see that there are a lot of improvement oppurtinities for more advance strategies. 
 
 Apart from directly address the possibilities above, there are multiple oppurtinities of improvement. (1) Currently, for each characterization step with addition dataset of subspace model, we did not use posterior distribution from the previous step as a prior but start with the default distribution. So, it is also interesting to explore the use of posterior distribution in the previous step as a prior distribution of model parameters of the next step. (2) It is also interesting open question whether, the bias of the dataset due to @eig, does indeed allow model to learn faster with fewer data points or the model performance is better because there are less things in the dataset (non-uniformness of input feature) for model to learn. 
 
