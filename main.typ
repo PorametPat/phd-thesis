@@ -14,9 +14,9 @@
 
 // Customize the render behavior
 // Make link looks good
-#show link: set text(fill: rgb("#7c3aed"))
+#show link: set text(fill: rgb(style.purple))
 #show ref: it => {
-  text(it, fill: rgb("#7c3aed"))
+  text(it, fill: rgb(style.purple))
 }
 
 #show heading: set block(above: 1.5em, below: 1.5em)
@@ -29,7 +29,7 @@
   size: 12pt,
 )
 #show heading.where(level: 1): it => {
-  if it.body not in ([Contents], [Bibliography], [Acknowledgement], [Glossary], [List of Notes], [Appendix]) {
+  if it.body not in ([Contents], [Bibliography], [Acknowledgement], [Glossary], [List of Todos], [Appendix]) {
     pagebreak(weak: true)
     block(width: 100%)[
       Chapter #counter(heading).display() #it.body
@@ -105,10 +105,10 @@
     let n-outline = query(
       heading.where(
         level: 1,
-        body: [List of Notes],
+        body: [List of Todos],
       ),
     ).at(0)
-    link(n-outline.location())[To Notes]
+    link(n-outline.location())[TODOs 🚀]
     h(0.5cm)
     box(rect(height: 10pt, radius: 1em, stroke: none, fill: rgb("#e5e7eb"), width: 100pt, inset: 0em, outset: 0em)[
       #rect(
@@ -128,7 +128,7 @@
   },
 )
 
-#note-outline() <note>
+#note-outline(title: "List of Todos") <note>
 
 // Setup appendix
 #let appendix(body) = {
@@ -147,7 +147,7 @@
 #include "chapters/chapter_2.typ"
 #include "chapters/chapter_3.typ"
 #include "chapters/chapter_4.typ"
-#include "chapters/chapter_5.typ" // <--- Layout did not converge within 5 attempts warning.
+#include "chapters/chapter_5.typ" // <--- Layout did not converge within 5 attempts warning becasue `callisto`. 
 #include "chapters/chapter_6.typ"
 
 #show: appendix

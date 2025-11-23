@@ -7,6 +7,7 @@
   black: "#272822",
   green: "#A6E22E",
   white: "#F8F8F2",
+  purple: "#7c3aed",
 )
 
 #let spec(title: "Specification", ..args) = clue(
@@ -73,9 +74,9 @@
   let func = args.at(1, default: none)
 
   if func == none {
-    $lr(angle.l expr angle.r, size: #50%)$
+    $lr(chevron.l expr chevron.r, size: #50%)$
   } else {
-    $lr(angle.l func#h(0pt)mid(|)#h(0pt)expr#h(0pt)mid(|)#h(0pt)func angle.r)$
+    $lr(chevron.l func#h(0pt)mid(|)#h(0pt)expr#h(0pt)mid(|)#h(0pt)func chevron.r)$
   }
 }
 #let expval = expectationvalue
@@ -90,15 +91,23 @@
     ) #text[#name]]
 }
 
-#let func(name) = _code(name, [func], rgb("#8259cd"), rgb("#b19cd937"))
+// #let func(name) = _code(name, [func], rgb("#8259cd"), rgb("#b19cd937"))
+#let func(name) = _code("", name, rgb("#8259cd"), rgb("#b19cd937"))
 
-#let modu(name) = _code(name, [modu], rgb("#4ad366"), rgb("#4ad36536"))
+// #let modu(name) = _code(name, [modu], rgb("#4ad366"), rgb("#4ad36536"))
 
-#let class(name) = _code(name, [class], rgb("#569cd6"), rgb("#569cd636"))
+#let modu(name) = _code("", name, rgb("#4ad366"), rgb("#4ad36536"))
 
-#let meth(name) = _code(name, [meth], rgb("#dcdcaa"), rgb("#dcdcaa36"))
+// #let class(name) = _code(name, [class], rgb("#569cd6"), rgb("#569cd636"))
+#let class(name) = _code("", name, rgb("#569cd6"), rgb("#569cd636"))
 
-#let pkg(name) = _code(name, [pkg], rgb("#ff6b6b"), rgb("#ff6b6b36"))
+// #let meth(name) = _code(name, [meth], rgb("#dcdcaa"), rgb("#dcdcaa36"))
+#let meth(name) = _code("", name, rgb("#dcdcaa"), rgb("#dcdcaa36"))
+
+// #let pkg(name) = _code(name, [pkg], rgb("#ff6b6b"), rgb("#ff6b6b36"))
+#let pkg(name) = _code("", name, rgb("#ff6b6b"), rgb("#ff6b6b36"))
+
+#let const(name) = _code("", name, rgb("#fba2fe"), rgb("#fdc4ff36"))
 
 
 #let control = $bold(Theta)$

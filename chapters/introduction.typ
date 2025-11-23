@@ -1,4 +1,4 @@
-#import "../utils.typ": style, tldr, tldr2
+#import "../utils.typ": style, tldr, tldr2, todoneedwrite, task
 
 = Introduction
 
@@ -12,7 +12,11 @@
 
 == The problem
 
-#lorem(100)
+#task[
+  #todoneedwrite[Write the introduction]
+  + Use the same flow as the slide
+  + Write how to read this thesis
+]
 
 == How to read this thesis
 #tldr[

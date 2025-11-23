@@ -21,19 +21,16 @@ This chapter will demonstrate how Inspeqtor can help researchers characterize an
 
 Quantum device is expected to be a large system of qubits. Complete characterization of the system in a classical representation is inefficient, if not impossible. For a large-scale characterization, only some system properties are of interest, and the information will be used to improve the system's performance. In the context of the characterization of the device into the predictive model, we only need to consider a subsystem of the device, i.e., only up to a two-qubit system. In this chapter, we will consider a single-qubit quantum device for demonstration purposes.
 
-Consider a system of a qubit with frequency $omega_q$ with a time-dependent control signal as a function of control $s(bold(Theta),t)$ and drive strength $Omega$. An ideal Hamiltonian of superconducting qubits in the rotating frame with respect to the qubit frequency is defined as
+Consider a system of a qubit with frequency $omega_q$ with a time-dependent control signal as a function of control $s(bold(Theta),t)$ and drive strength $Omega$. An ideal Hamiltonian of superconducting qubits is defined as
 $
-  H_("rot") = 2 pi Omega s(bold(Theta), t) (cos(2 pi omega_q t) sigma_x - sin(2 pi omega_q t) sigma_y)
-$ <eq:hamiltonian-rot>
+  hat(H) = (2 pi omega_q) / 2 sigma_z + 2 pi Omega s(bold(Theta), t) sigma_x
+$ <eq:transmon>
 where $sigma_i in {X, Y, Z}$ is a Pauli matrix. The control signal is a function of envelope function $h(bold(Theta), t)$ with driving frequency $omega_d$ typically set equal to the qubit frequency and phase $phi$ defined as follows,
 $
   s(bold(Theta), t) = Re { h(bold(Theta), t) exp(i (2 pi omega_d t + phi)) }
 $
-In a realistic setting, multiple sources of noise influence the dynamics of the system. However, for the simplicity and interpretability of our numerical study, we consider the case where the ideal Hamiltonian is perturbed by $hat(H)_("noise") = Delta sigma_x$. Thus, the total Hamiltonian is,
-$
-  H_("total") = H_("rot") + H_("noise")
-$
-This particular choice of noise model will only affect the ideal evolution in the X-axis at the level of the Hamiltonian.
+In our numerical simulation, we test the Graybox performance by considering a scenario with a drift (or mismatch) in the qubit frequency.
+The real value of the qubit frequency denoted by $omega'_q = 5.0005$ GHz is shifted from the value assumed by an experimenter, $omega_q = 5.0$ GHz, by $0.5$ MHz. This way, to simulate the real qubit's dynamics, we use @eq:transmon with $omega'_q$ for the qubit frequency, but $omega_d =  5.0$ GHz for the microwave drive, reflecting the experimenter's wrong assumption about the resonance condition. For the drive strength, we choose $Omega_d = 0.1 "GHz"$, which is similar to the value that we obtain from the IBM-Q's device in the next section. 
 
 == Level of Characterization
 
@@ -48,63 +45,7 @@ We now explain in details of each step. The first four steps are the same for ea
 
 *The control:* Motivated by the noise model, we consider a single-parameter control in the Pauli X direction. The control envelope is a Gaussian shape with an area under the curve as a control parameter. The control is a rotation along the X-axis of the Bloch sphere, where the area is the rotation angle. The control is the same as defined in @eq:gaussian-envelope. Thus, we define the `ControlSequence` for inspeqtor using the code snippet defined in @code:gaussian-seqence.
 
-*Perform experiments and save to disk:* For the synthesis dataset, the inspector provides a convenient predefined function `sq.predefined.generate_experimental_data` to generate the noisy dataset given the system Hamiltonian, the control, and the other necessary information. We use the following code snippet to define the Hamiltonian of the noisy device.
-
-```python
-def get_data_model(
-    detune: float, trotterization: bool = False, trotter_steps: int = 1000
-) -> sq.utils.SyntheticDataModel:
-    qubit_info = sq.predefined.get_mock_qubit_information()
-    control_sequence = sq.predefined.get_gaussian_control_sequence(
-        qubit_info=qubit_info
-    )
-    dt = 2 / 9
-
-    ideal_hamiltonian = partial(
-        sq.predefined.rotating_transmon_hamiltonian,
-        qubit_info=qubit_info,
-        signal=sq.physics.signal_func_v5(
-            get_envelope=sq.predefined.get_envelope_transformer(
-                control_sequence=control_sequence
-            ),
-            drive_frequency=qubit_info.frequency,
-            dt=dt,
-        ),
-    )
-
-    total_hamiltonian = sq.predefined.detune_x_hamiltonian(
-        ideal_hamiltonian, detune * qubit_info.frequency
-    )
-
-    ode_solver = sq.predefined.get_single_qubit_whitebox(
-        hamiltonian=total_hamiltonian,
-        control_sequence=control_sequence,
-        qubit_info=qubit_info,
-        dt=dt,
-    )
-
-    trotter_solver = sq.physics.make_trotterization_whitebox(
-        hamiltonian=total_hamiltonian,
-        control_sequence=control_sequence,
-        trotter_steps=trotter_steps,
-        dt=dt,
-    )
-
-    solver = ode_solver if not trotterization else trotter_solver
-
-    return sq.utils.SyntheticDataModel(
-        control_sequence=control_sequence,
-        qubit_information=qubit_info,
-        dt=dt,
-        ideal_hamiltonian=ideal_hamiltonian,
-        total_hamiltonian=total_hamiltonian,
-        solver=solver,
-        quantum_device=None,
-        whitebox=None,
-    )
-
-```
-
+*Perform experiments and save to disk:* For the synthesis dataset, the inspector provides a convenient predefined function `sq.data.library.get_predefined_data_model_m1` to generate the noisy dataset given the system Hamiltonian, the control, and the other necessary information. We use the following code snippet to define the Hamiltonian of the noisy device.
 
 We define the ideal Hamiltonian first, and will reuse it for the construction of the Whitebox. We then use the ideal Hamiltonian to define the total Hamiltonian. Now, we generete the dataset using the following code snippet.
 #figure(
@@ -114,31 +55,33 @@ We define the ideal Hamiltonian first, and will reuse it for the construction of
 )[
   ```python
 
-  detune = 0.001
-  trotterization = True
-  trotter_steps = 10_000
+  data_model = sq.data.library.get_predefined_data_model_m1(
+        detune, trotterization=trotterization, trotter_steps=trotter_steps
+    )
+
   sample_size = 1000
   shots = 1000
-
-  data_model = get_data_model(
-    detune=detune,
-    trotterization=trotterization,
-    trotter_steps=trotter_steps,
-  )
 
   data_key = jax.random.key(0)
 
   exp_data, control_sequence, unitaries, noisy_simulator = (
-    sq.predefined.generate_experimental_data(
-        key=data_key,
-        hamiltonian=data_model.total_hamiltonian,
-        sample_size=sample_size,
-        shots=shots,
-        strategy=sq.predefined.SimulationStrategy.SHOT,
-        get_qubit_information_fn=lambda: data_model.qubit_information,
-        get_control_sequence_fn=lambda: data_model.control_sequence,
-        method=sq.predefined.WhiteboxStrategy.TROTTER,
-    )
+      sq.data.library.generate_single_qubit_experimental_data(
+          key=data_key,
+          hamiltonian=data_model.total_hamiltonian,
+          sample_size=sample_size,
+          shots=shots,
+          strategy=sq.physics.library.SimulationStrategy.SHOT,
+          qubit_inforamtion=data_model.qubit_information,
+          control_sequence=data_model.control_sequence,
+          method=sq.physics.library.WhiteboxStrategy.TROTTER
+          if trotterization
+          else sq.physics.library.WhiteboxStrategy.ODE,
+          trotter_steps=trotter_steps,
+      )
+  )
+
+  sq.data.save_data_to_path(
+      path=path, experiment_data=exp_data, control_sequence=control_sequence
   )
   ```
 ] <code:generate-dataset>
@@ -147,18 +90,17 @@ We can pass `total_hamiltonian` to the function as simple as show in @code:gener
 *Load and prepare dataset:*
 Next step is to read the dataset from local storage. We  use `sq.predefined.load_data_from_path` for this task as follows.
 ```python
-from inspeqtor.experimental.predefined import HamiltonianEnum
-
-loaded_data = sq.predefined.load_data_from_path(
+loaded_data = sq.data.load_data_from_path(
     data_path,
-    hamiltonian_spec=sq.predefined.HamiltonianSpec(
-        method=sq.predefined.WhiteboxStrategy.TROTTER
+    hamiltonian_spec=sq.physics.library.HamiltonianSpec(
+        method=sq.physics.library.WhiteboxStrategy.TROTTER
+        if TROTTERIZATION
+        else sq.physics.library.WhiteboxStrategy.ODE,
         trotter_steps=TROTTER_STEPS,
-        hamiltonian_enum=HamiltonianEnum.rotating_transmon_hamiltonian
     ),
 )
 ```
-The predefined function allows us to specify the Whitebox specifications such as solver method and the Hamiltonian. The `HamiltonianSpec` is a predefined dataclass to specifiy the ideal Hamiltonian and solver method to use. In this case, the Hamiltonian of Whitebox is the same as the ideal Hamiltonian defined in @eq:hamiltonian-rot. We can now solve the Schrödinger equation for an ideal unitary operator to be combined with results from Blackbox. To solve for a unitary operator from the Hamiltonian, we use the Trotterization method offered by inspeqtor. The Whitebox function is a function of the control parameter. It will be used to precompute the unitary operators for the training and testing datasets and can also be used to compute the unitary operators on demand.
+The predefined function allows us to specify the Whitebox specifications such as solver method and the Hamiltonian. The `HamiltonianSpec` is a predefined dataclass to specifiy the ideal Hamiltonian and solver method to use. In this case, the Hamiltonian of Whitebox is the Hamiltonian defined in @eq:transmon in the rotating frame with respect to $omega_q$. We can now solve the Schrödinger equation for an ideal unitary operator to be combined with results from Blackbox. To solve for a unitary operator from the Hamiltonian, we use the Trotterization method offered by inspeqtor. The Whitebox function is a function of the control parameter. It will be used to precompute the unitary operators for the training and testing datasets and can also be used to compute the unitary operators on demand.
 
 After we load the dataset, we split them into training and testing dataset. We can access the control parameters, and their unitary and expectation values from `loaded_data` which is a simple data holder. `inspeqtor` also provide a simple function to randomly split the dataset into two sets using `sq.utils.random_split`.
 ```python
@@ -186,18 +128,16 @@ def make_test_sample_fn(
     data_model: sq.utils.SyntheticDataModel,
     shots: int,
 ):
-    _, to_array_fn = sq.control.get_param_array_converter(data_model.control_sequence)
+    ravel_fn, _ = sq.control.ravel_unravel_fn(data_model.control_sequence)
 
     def generate_test_distribution(key: jnp.ndarray, sample_size: int = 100):
         control_key, solver_key = jax.random.split(key)
 
-        control_param = to_array_fn(
-            data_model.control_sequence.sample_params(control_key)
-        )
+        control_param = ravel_fn(data_model.control_sequence.sample_params(control_key))
 
-        expvals = jax.vmap(sq.utils.shot_quantum_device, in_axes=(None, 0, None, None))(
-            control_param.reshape(1, -1),
+        expvals = jax.vmap(sq.utils.shot_quantum_device, in_axes=(0, None, None, None))(
             jax.random.split(solver_key, sample_size),
+            control_param.reshape(1, -1),
             data_model.solver,
             shots,
         )
@@ -208,10 +148,13 @@ def make_test_sample_fn(
 ```
 We can use the function with the following code snippet.
 ```python
-generate_test_distribution = make_test_sample_fn(
-  data_model,
-  shots=shots
+data_model = sq.data.library.get_predefined_data_model_m1(
+    detune=DETUNE,
+    trotterization=TROTTERIZATION,
+    trotter_steps=TROTTER_STEPS,
 )
+
+generate_test_distribution = ml.make_test_sample_fn(data_model, shots=shots)
 test_control_param, test_samples = generate_test_distribution(jax.random.key(0))
 ```
 With `test_samples`, we can test our model performance by predicting a distribution of `test_control_param` and measure the @jsd of the distribution of the expectaction values and calculate $cal(L)_("MSE[E]")$. Although @jsd is a direct measure of how close the distributions are to each other, we use $cal(L)_("MSE[E]")$ as an indicator of how much the mean of predicted distributions are close to the ideal values.
@@ -354,7 +297,7 @@ We plot the results in @fig:pgm-stat. The prediction performance of @pgm is simi
   ],
 ) <fig:pgm-stat>
 
-=== BOED approach <sec:boed-experiment>
+== BOED approach <sec:boed-experiment>
 
 Now, we are going to demonstrate the advantage of using probabilistic model which is the ability to use it for calculation of @eig and use the information in device characterization. We are going to show how to use the model in sequential experiments and compare its performance to the approach without @eig.
 
@@ -433,11 +376,11 @@ For the subspace strategy, we illustrate how do we select the next experimental 
 // )
 
 #let (display, result, source, output, outputs, Cell, cell) = callisto.config(
-  nb: json("../code/chapter-5-strategies-v2/note_0004_visualization_polars.ipynb"),
+  nb: json("../code/chapter-5-strategies-v3/note_0004_visualization_polars.ipynb"),
 )
 
 #figure(
-    // image("placeholder.png"),
+  // image("placeholder.png"),
   output("subspace_selection"),
   caption: [
     An example of @eig for each control parameter throughout the sequential experiments and characterization. The red points are the selected control parameters at the current step. The gray points are the selected control parameters in the previous step.
@@ -452,8 +395,8 @@ For the subspace strategy, we illustrate how do we select the next experimental 
   ],
 ) <fig:control-histogram>
 
-We repeatedly perform sequential experiments for 10 times to compare the performance statistics. We test on multiple control parameters which is basically the specialized testing dataset dicussed in @sec:data-variance-approach. The figure summarize the benchmark results comparing @jsd of the model train using dataset obtained from random and subspace strategy is presented in @fig:compare-strategies. 
-We chose test control parameters $theta = {0.0^degree, 35.7^degree, 71.7^degree, 107.7^degree, 143.8^degree, 179.8^degree, 215.9^degree, 251.9^degree, 287.9^degree, 324.0^degree, 360.0^degree}$. 
+We repeatedly perform sequential experiments for 10 times to compare the performance statistics. We test on multiple control parameters which is basically the specialized testing dataset dicussed in @sec:data-variance-approach. The figure summarize the benchmark results comparing @jsd of the model train using dataset obtained from random and subspace strategy is presented in @fig:compare-strategies.
+We chose test control parameters $theta = {0.0^degree, 35.7^degree, 71.7^degree, 107.7^degree, 143.8^degree, 179.8^degree, 215.9^degree, 251.9^degree, 287.9^degree, 324.0^degree, 360.0^degree}$.
 
 #figure(
   output("compare_strategies"),
@@ -464,9 +407,9 @@ We chose test control parameters $theta = {0.0^degree, 35.7^degree, 71.7^degree,
 ) <fig:compare-strategies>
 
 
-We can see from the result in @fig:compare-strategies that subspace strategy can consistancy choose control parameters (i.e. experimental design) that allows model to have performance better than a random strategy on the first few batches. From @fig:eig-example and @fig:control-histogram, we can observe that subspace strategy actively select control parameters near $theta = { 0^degree, 90^degree, 180^degree, 270^degree, 360^degree }$. These subspace dataset is a good starter dataset which allow model to start at a good initial model parameters. However, since the landscape of the @eig does not change significantly, the choice of experiment designs are concentrate at the same points. Consequently, there is no significant performance improvement with additional samples. On the other hand, the random strategy catch up and perform better after more data are collected. However, this strategies does not perfom well at the $theta = 0^degree$ compare to subspace which deliberately choose $theta = 0^degree$. So we consider the alternative strategy with subspace as a first in the sequence. We observe the improvement of the model performance conpare to the pure subspace strategy. The alternative strategy manage to perform well at $theta = 0^degree$ similar to subspace strategy, while we can improve the performance of the model with more samples. Although the improvement is not significant and the random strategy can produce the model that could catch up after more samples, we can see that subspace strategy allow for a better start than random strategy. Furthermore, with alternative strategy, we can see that there are a lot of improvement oppurtinities for more advance strategies. 
+We can see from the result in @fig:compare-strategies that subspace strategy can consistancy choose control parameters (i.e. experimental design) that allows model to have performance better than a random strategy on the first few batches. From @fig:eig-example and @fig:control-histogram, we can observe that subspace strategy actively select control parameters near $theta = { 0^degree, 90^degree, 180^degree, 270^degree, 360^degree }$. These subspace dataset is a good starter dataset which allow model to start at a good initial model parameters. However, since the landscape of the @eig does not change significantly, the choice of experiment designs are concentrate at the same points. Consequently, there is no significant performance improvement with additional samples. On the other hand, the random strategy catch up and perform better after more data are collected. However, this strategies does not perfom well at the $theta = 0^degree$ compare to subspace which deliberately choose $theta = 0^degree$. So we consider the alternative strategy with subspace as a first in the sequence. We observe the improvement of the model performance conpare to the pure subspace strategy. The alternative strategy manage to perform well at $theta = 0^degree$ similar to subspace strategy, while we can improve the performance of the model with more samples. Although the improvement is not significant and the random strategy can produce the model that could catch up after more samples, we can see that subspace strategy allow for a better start than random strategy. Furthermore, with alternative strategy, we can see that there are a lot of improvement oppurtinities for more advance strategies.
 
-Apart from directly address the possibilities above, there are multiple oppurtinities of improvement. (1) Currently, for each characterization step with addition dataset of subspace model, we did not use posterior distribution from the previous step as a prior but start with the default distribution. So, it is also interesting to explore the use of posterior distribution in the previous step as a prior distribution of model parameters of the next step. (2) It is also interesting open question whether, the bias of the dataset due to @eig, does indeed allow model to learn faster with fewer data points or the model performance is better because there are less things in the dataset (non-uniformness of input feature) for model to learn. 
+Apart from directly address the possibilities above, there are multiple oppurtinities of improvement. (1) Currently, for each characterization step with addition dataset of subspace model, we did not use posterior distribution from the previous step as a prior but start with the default distribution. So, it is also interesting to explore the use of posterior distribution in the previous step as a prior distribution of model parameters of the next step. (2) It is also interesting open question whether, the bias of the dataset due to @eig, does indeed allow model to learn faster with fewer data points or the model performance is better because there are less things in the dataset (non-uniformness of input feature) for model to learn.
 
 
 

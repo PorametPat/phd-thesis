@@ -308,7 +308,7 @@ $
 $
 We have
 $
-  dot(U)_(0) = diff / (diff t) U_(0) = i (a_(0))/2 hat(sigma)_z U_(0),
+  dot(U)_(0) = partial / (partial t) U_(0) = i (a_(0))/2 hat(sigma)_z U_(0),
 $
 and 
 $

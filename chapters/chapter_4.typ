@@ -1,7 +1,7 @@
 #import "@preview/drafting:0.2.2": inline-note, margin-note
 #import "@preview/callisto:0.2.4"
 #import "../utils.typ": (
-  class, control, expval, func, meth, modu, pkg, spec, style, tldr, tldr2, todocontinue, todoneedwrite,
+  class, control, expval, func, meth, modu, pkg, const, spec, style, tldr, tldr2, todocontinue, todoneedwrite,
 )
 #import "@preview/gentle-clues:1.2.0": *
 #import "@preview/fletcher:0.5.8": diagram, edge, node
@@ -119,6 +119,55 @@ The priors of the device that necessary for closed-loop approach are gather and 
 
 
 With the guidelines from the abstract pipeline, we can now discuss the implementation of the `inspeqtor`. First, we discuss the choice of the numerical backend `jax` that we used and then discuss the essential modules then finish with other modules brief disucssion. Note that, we did not implement blackbox optimizer. Because, the advantange of using `jax` is the benefit of automatic-differentiation which allow for gradient-based optimization. However, blackbox optimization algorithm does not required gradient of the objective function. Thus, user can utilize other libraries for the blackbox optimizers.
+
+== Structure of #pkg[`inspeqtor`]
+
+By design, #pkg[`inspeqtor`] library is a collection of modules that works together via data structure representing physical entities. To maintain a platform-agnostic design, we model the physical entities following the mathematical representation rather than object with attributes and methods. Thus, in the following sections, we will sometime discuss the design of the function by introducing the function signature base on its mathmematical represenation. While, its actual implementation may includes additional arguments which can be static. For instance, let us consider a time-dependent Hamiltonian of a system controllable by a vector of $n$ control parameter $control$ denoted $H(control, t)$. In our framework, we represent $H(control, t)$ with function $cal(H)$ with the following signature,
+$
+  cal(H) ( control: bb(R)^n times t: bb(R) ) -> "Hermitian"(bb(N), bb(C)).
+$
+The function return a Hermitian matrix with appropiate dimension. In the implementaiton, user may construct the function $cal(H)$ using #modu(`control`).
+The Hamiltonian function $cal(H)$ is then used to produce a solver function $cal(S)$ that solve the system differential equation given an initial state $rho_0 in "Hermitian"(bb(N), bb(C))$
+with the following signature,
+$
+  cal(S) ( control: bb(R)^n times rho_0: "Hermitian"(bb(N) times bb(C)) times cal(H) times arrow(t): RR^(|t|) ) -> rho_f: "Hermitian"(bb(N), bb(C)).
+$
+The function $cal(S)$ is given in #modu(`physics`). Then, user can use functions in #modu(`utils`) to compose a function that return a finite-shot expectation value $EE[ hat(O) ]$ with the following signature,
+$
+  EE (control: bb(R)^n) -> EE[ hat(O) ]: RR.
+$
+
+We organize #pkg[`inspeqtor`] into multiple modules that provide functionalities for composing a pipeline for characterizing and calibrating the quantum device. To main it intuitive for user, each module aims to provide functions related to its name. The  platform-agnostic functions are exported under the `module` namespace, while the predefined functions for platform specific or common use case are export under the `module.library` namespace. In the case of #modu[`models`], we define extra namespaces to organize the functions under their related `submodule`. Below, we visualize the tree structure of #pkg[`inspeqtor`].
+
+#import "@preview/treet:1.0.0": *
+
+
+#[
+  #set par(leading: 0.45em, justify: true, first-line-indent: (
+    amount: 0.0em,
+  ))
+  #tree-list[
+    - inspeqtor/
+      - control
+        - library.py
+      - data
+        - library.py
+      - models
+        - library.py
+          - nnx.py
+          - linen.py
+        - adapter.py
+        - shared.py
+        - probabilistic.py
+      - physics
+        - library.py
+      - optimize.py
+      - utils.py
+      - boed.py
+  ]
+]
+
+
 
 
 // #chronos.diagram({
@@ -239,10 +288,10 @@ The benefits of the functional style of `jax` will become apparent as we continu
 ]
 
 #spec[
-  + Represent the control function of the quantum device. 
-  + Be able to convert the vector of the control parameter to the vector control simulable by #modu[`physics`]'s solver. 
-  + User can sample the control parameter from the control instance. 
-  + Provide a conversion between structured data type and array type for readable serialization and ready to used by machine learning framework. 
+  + Represent the control function of the quantum device.
+  + Be able to convert the vector of the control parameter to the vector control simulable by #modu[`physics`]'s solver.
+  + User can sample the control parameter from the control instance.
+  + Provide a conversion between structured data type and array type for readable serialization and ready to used by machine learning framework.
 ]
 
 The control of the quantum device depends on the system's physical realization. To model the possibility of control, we implement a base class, `BaseControl`, intended for developer to inherit from it with their implementation. Then, the defined control, denoted #class[`Control`], can be used via a unified interface, implemented via #class[`ControlSequence`]. Within the sequence, the developer can mix different types of #class[`Control`].
@@ -251,56 +300,20 @@ As an illustrative example, in the superconducting qubit platform, a classical c
 $
   h(theta, t) = A / (sqrt(2 pi) sigma) exp(-((t - T \/2)^2) / (2 sigma^2)) .
 $ <eq:gaussian-envelope>
-In this example, the only control parameters is $theta$. Control parameters are structured with `ParametersDictType`, simply a Python dictionary with a key as the control parameter's name corresponding to the parameter's value, which is a value with a type of `float` or `jnp.ndarray` of shape `shape = ()`. To inherit the `BaseControl`, one has to implement the `get_bounds` and `get_envelope` methods. The `get_bounds` method is a function with no input arguments that return a tuple of lower (of `ParametersDictType` type) and upper bound ( of `ParametersDictType` type) of the control parameters. This is the bound that will be call by a unified `sample_params` function to sample from uniform distribution defined with control bound and return sample of control parameter with the same structure as the lower and upper bound. Then the `get_envelope` function receives the control sample and return the envelope function which is a function of time.
+In this example, the only control parameters is $theta$. Control parameters are structured with `ParametersDictType`, simply a Python dictionary with a key as the control parameter's name corresponding to the parameter's value, which is a value with a type of `float` or `jnp.ndarray` of shape `shape = ()`. To inherit the `BaseControl`, one has to implement the `get_bounds` and `get_envelope` methods. The `get_bounds` method is a function with no input arguments that return a tuple of lower (of `ParametersDictType` type) and upper bound ( of `ParametersDictType` type) of the control parameters. This is the bound that will be call by a unified `sample_params` function to sample from uniform distribution defined with control bound and return sample of control parameter with the same structure as the lower and upper bound. Then the `get_envelope` function receives the control sample and return the envelope function which is a function of time. The mathematical specification of the `get_envelope` function is
+$
+  "get_envelope" (control: RR^n) -> (t: RR -> h(control, t): CC)
+$
 
 From the Gaussian envelop example, a control class may defined as follow,
-```python
-@dataclass
-class GaussianPulse(BaseControl):
-	duration: int
-	qubit_drive_strength: float
-	dt: float
-	max_amp: float = 0.25
-	min_theta: float = 0.0
-	max_theta: float = 2 * jnp.pi
 
-def __post_init__(self):
-	self.t_eval = jnp.arange(self.duration, dtype=jnp.float_)
-	# This is the correction factor that will cancel the factor in the front of rotating transmon hamiltonian
-	self.correction = 2 * jnp.pi * self.qubit_drive_strength * self.dt
-	# The standard derivation of Gaussian pulse is keep fixed for the given max_amp
-	self.sigma = jnp.sqrt(2 * jnp.pi) / (self.max_amp * self.correction)
-	# The center position is set at the center of the duration
-	self.center_position = self.duration // 2
+// Get more functions preconfigured for this notebook
+#let (display, result, source, output, outputs, Cell, cell) = callisto.config(
+  nb: json("../code/chapter-4/note_0001.ipynb"),
+)
 
-def get_bounds(
-	self,
-) -> tuple[ParametersDictType, ParametersDictType]:
-	lower: ParametersDictType = {}
-	upper: ParametersDictType = {}
-	lower["theta"] = self.min_theta
-	upper["theta"] = self.max_theta
-	return lower, upper
 
-def get_envelope(
-	self, params: ParametersDictType
-) -> typing.Callable[..., typing.Any]:
-	# The area of the Gaussian to be rotated to,
-	area = (
-		params["theta"] / self.correction
-	) # NOTE: Choice of area is arbitrary, e.g. pi pulse
-	return gaussian_envelope(
-		amp=area, center=self.center_position, sigma=self.sigma
-	)
-
-def gaussian_envelope(amp, center, sigma):
-	def g_fn(t):
-		return (amp / (jnp.sqrt(2 * jnp.pi) * sigma)) * jnp.exp(
-			-((t - center) ** 2) / (2 * sigma**2)
-		)
-	return g_fn
-
-```
+#source("gaussian_control")
 
 The #class[`ControlSequence`] can be instantiated as,
 #figure(
@@ -309,38 +322,32 @@ The #class[`ControlSequence`] can be instantiated as,
   ],
   // kind: "code",
   // supplement: "Listing"
-)[```python
-total_length = 320
-dt = 2 / 9
-control_seq = sq.control.ControlSequence(
-	pulses=[
-		GaussianPulse(
-			duration=total_length,
-			qubit_drive_strength=qubit_info.drive_strength,
-			dt=dt,
-			max_amp=max_amp,
-			min_theta=0.0,
-			max_theta=2 * jnp.pi,
-		),
-	],
-	pulse_length_dt=total_length,
-)
-```] <code:gaussian-seqence>
+)[
+  #source("ctrl_seq")
+] <code:gaussian-seqence>
 
-Note that the control sequence receives a list of control classes. Internally, the total envelope is the sum of each control class, and the bound is a list of the bounds of each control class. Now, the sample of the control sequence would look like this,
+Note that the control sequence receives a dict of control classes. Internally, the total envelope is the sum of each control class, and the bound is a dict of the bounds of each control class. Now, the sample of the control sequence would look like this,
 
-```python
->>> control_seq.sample_params(jax.random.key(0))
->>> [{'theta': Array(0.99921654, dtype=float64)}]
-```
+#Cell("single_sample")
 
-Then, the sample can be use for experiment, and model selection. The data structure of control parameters as a list of dict is suitable for storing on disk and for readability. However, this structure might not be optimal for predictive model training. Thus, we also provide generic convenient functions, #func[`list_of_params_to_array`] and #func[`array_to_list_of_params`] , to transform the `list[ParametersDictType]` to `jnp.ndarray` and vice versa.
+We can visualize the envelope of the control sequence as follows,
 
-We decide to implement control module revolving the class object because we have to standardize a way to structure the control parameters and consequently, how to properly save and load them on disk for later utilization. It is also serve as a way to perform automatic validation for the user at the instantiated time, which intented to help user detect potential bugs before proceed further.
+#Cell("envelope")
 
-During the time of writing this thesis, an improved approach to #modu[`control`] is being developed in the same sub-module name, #modu[`control`] but within #modu[`v2`] namespace. The new approach store the atomic controls using dictionary instead of a list. This design decision maintain the order of the atomic controlled by the internal structure created automatically during object initialization. During the object serialization, we also save the structure of the control and read it back when we load the control from a given saved file. User can manually overwrite or provide a custom structure of the control as well. Instead of #func[`list_of_params_to_array`] and #func[`array_to_list_of_params`], the `v2.control` use #func[`ravel_fn`] and #func[`unravel_fn`] returned by #func[`ravel_unravel_fn`] given control instead. 
+Furthermore, we can also perform a batch sampling using `jax.vmap` as follows,
 
-== Data
+#Cell("batch_sample")
+
+Then, the sample can be use for experiment, and model selection. The data structure of control parameters as a dict of dict is suitable for storing on disk and for readability. We will discuss how to store the control pararmeters later in @sec:data.
+However, this structure might not be optimal for predictive model training. Thus, we also provide generic convenient functions #func[`ravel_unravel_fn`], which returns `ravel_fn` and `unravel_fn` to transform the `dict[ParametersDictType]` to `jnp.ndarray` and vice versa. Let us see the following example,
+
+#Cell("ravel_unravel_fn")
+
+We decide to implement control module revolving the class object because we have to standardize a way to structure the control parameters and consequently, how to properly save and load them on disk for later utilization. It is also serve as a way to perform automatic validation for the user at the instantiated time, which intented to help user detect potential bugs before proceed further. Below is the code snippet for save and load the control to and from file system.
+
+#Cell("save_load_ctrl")
+
+== Data <sec:data>
 #tldr[
   This module provide inference to in-memory and file strorage system for the characterization data. We provide a way for user to enforce data schema to be consistent using type hinting, and store data enough for predictive model construction.
 ]
@@ -351,67 +358,51 @@ In `inspeqtor`, we prefer to keep the data structure flat and cross-platform. Th
   + Store data in a cross-platform and human-readable format
   + Be the interface between in-memory and file system
   + Enforce schema on the data and perform validation
+  + Storing experimental data in three parts:
+    + Experimental Configutation: the experimental settings such as the device and date perform the experiment
+    + Parameters table: Table that each row is the control parameters $control$
+    + Observed data table: The observations associated to the control paramters.
 ]
 
 
 Sometimes, we have to store the specifications of a quantum device, especially when a predictive model using a closed-form Hamiltonian is needed. The fundamental unit of data of the quantum device is the qubit. Thus, we provide a `dataclass` for storing information about a qubit, which is `QubitInformation`. The instance can be initialized using the following code snippet:
 
-```python
-QubitInformation(
-	unit="GHz",
-	qubit_idx=0,
-	anharmonicity=-0.2,
-	frequency=5.0,
-	drive_strength=0.1,
-)
-```
+#Cell("qubit_info")
 
-Note that the package's initial design is based on the use case of a superconducting device. However, the data class can be easily generalized. Auto-completion makes it easy to access the properties of the qubit. Furthermore, the class also implements methods to convert from and to `dict` object.
+Note that the package's initial design is based on the use case of a superconducting device. However, the data class can be easily generalized. Auto-completion makes it easy to access the properties of the qubit. Furthermore, the class also implements methods to convert from and to `dict` object `qubit_info.to_dict()`.
 
 === Experiment Config
 Initial design of the #pkg[`inspeqtor`] revolve around Graybox characterization method. Consequently, we designed the data schema to support storing data for arbitrary control sequence #class[`ControlSequence`] as columns of control parameters and its corresponding expectation values. Turn out that it is a good design choice. Since characterization often involve sending some specialized control sequence and store the observations for post-processing. Especially, the characterization for control calibration, that a only few qubits system data have to be stored.
 
+#Cell("config")
 
 === Experiment Data
 
-The central data entity is #class[`ExperimentData`]. This is an object that responsible for organizing the experimental data. It provides the save and load functionality. It stores experimental data as a `pandas.DataFrame` object and separately stores `ExperimentConfig` to keep track of how the data is produced. It saves the data in a `csv` format to the disk and load them back to the ready to use format.
+The central data entity is #class[`ExperimentalData`]. This is an object that responsible for organizing the experimental data. It provides the save and load functionality. It stores experimental data as `polars.DataFrame` objects and separately stores `ExperimentConfig` to keep track of how the data is produced. It saves the data in a `csv` format to the disk and load them back to the ready to use format.
 
-It requires `ExperimentConfig` and `preprocess_data` for the instantiation. The `preprocess_data` is a `pandas.Dataframe` object where each row is produced from `make_row` function. The following pseudo code demonstrate the intented usage,
-```python
-config = ExperimentConfig(...)
-# The list of sample of control parameters
-control_params_list = [...]
-# The array of expectation value of shape (sample_size, 18)
-expectation_values = jnp.array([...])
+It requires `parameter_dataframe`, `observed_dataframe` and, `ExperimentConfig` for the instantiation. The `parameter_dataframe`, `observed_dataframe` are a `polars.DataFrame` objects where each row corresponded to a `parameter_id`. The following code snippet demonstrate the intented usage,
 
-rows = []
-for sample_idx in range(config.sample_size):
-        for exp_idx, exp in enumerate(default_expectation_values_order):
-            row = make_row(
-        			expectation_value=float(expectation_values[sample_idx,
-							exp_idx]),
-							initial_state=exp.initial_state,
-							observable=exp.observable,
-							parameters_list=control_params_list[sample_idx],
-							parameters_id=sample_idx,
-            )
-            rows.append(row)
-    df = pd.DataFrame(rows)
-    exp_data = ExperimentData(experiment_config=config, preprocess_data=df)
+#Cell("exp_data")
 
-```
-The `make_row` is a utility function that guide user to create a valid row of a `pandas.DataFrame` that can be used to construct #class[`ExperimentData`]. During the initialization, we perform a series of validations according to the specification defined in `PredefinedCol`. The checks are basically to make sure that the data provided by user follow the conventions used in `inspeqtor`. However, note that user has a freedom to include additional columns to the object.
+Note that user has a freedom to include additional columns to the object.
 
-Note that characterization that we are interested is only for small system. Not the randomized benchmarking kind. The initial developement of the package revolve around Graybox characterization method, but the concept can be generalized. For the characterization experiment for specific model parameter such as qubit frequency, we expect that the control, experimental results can be format and save using #class[`ExperimentData`] object.
+Note that characterization that we are interested is only for small system. Not the randomized benchmarking kind. The initial developement of the package revolve around Graybox characterization method, but the concept can be generalized. For the characterization experiment of specific model parameter such as $T_1$ and $T_2$ time, experimental results can also be format and save using #class[`ExperimentalData`] object.
 
 User can save and load the #class[`ExperimnetData`] from and to folder directly using #meth[`save_to_folder`] and #meth[`from_folder`] functions.
 
 === Operator, State, and Expectation Value
-Throughout the characterization and calibration process, the user will often has to repeatedly access to observable $hat(O)$ and initial state $rho_0$ both in terms of its string and matrix representation. `ExpectationValue` is an object that standardize way to interact with the mathematical definition of expectation value of quantum observable $expval(hat(O))_rho_0$ in `inspeqtor`. User can access string representation via `initial_state` and `observable`, and matrix representation via `initial_statevector`, `initial_density_matrix`, and `observable_matrix`. However, user will rarely has to directly instantiate the `ExpectationValue` object. We expect the user to interact with them via a predefined list of `ExpectationValue`, defined in `constant.default_expectation_values_order`. The list is a default order of the expectation values that used throughout `inspeqtor`, since we always have to loop over the combinations of the expectation values.
+Throughout the characterization and calibration process, the user will often has to repeatedly access to observable $hat(O)$ and initial state $rho_0$ both in terms of its string and matrix representation. `ExpectationValue` is an object that standardize way to interact with the mathematical definition of expectation value of quantum observable $expval(hat(O))_rho_0$ in `inspeqtor`. User can access string representation via `initial_state` and `observable`.
 
-=== `v2` Implementation
+#Cell("expval")
 
-To accompy the propose `v2` implementation of #modu[`control`], we also redesign the #class[`ExperimentData`] and #class[`ExperimentConfig`] as well. While #class[`ExperimentConfig`] remain relatively the same, the major change of #class[`ExperimentData`] is that we now keep the dataframe of the control parameter and the observed data separately. Furthermore, we also use `polars` instead of `pandas` for dataframe manipulation, since it is faster and easier to use. The data conversion can be done efficiently using `jax.vmap` of `ravel_fn` and `unravel_fn`. We also design the #class[`v2.data.ExperimentData`] while keeping scaling to more than one qubit system data handling in mind. The assumption of storing expectation value data is removed, allows user to defined their own experimental observation. The #modu[`data`] becomes an interface between the experiment on real device and the local characterization process. 
+To get the matrix representation of the initial state and observable, we use the functional approach as follows:
+
+#Cell("initial_state")
+#Cell("observable")
+
+Each token in the string of the initial state and observable represents a common eigenvector of Pauli operator and Pauli operator.
+
+We expect the user to interact with the expectatation values via a predefined list of `ExpectationValue`, defined in `sq.utils.default_expectation_values_order`. The list is a default order of the expectation values that used throughout `inspeqtor`, since we always have to loop over the combinations of the expectation values. For a system of `n` qubits, we can generate the list of order using #func[`sq.data.get_complete_expectation_values(n)`].
 
 === Data flow
 
@@ -454,7 +445,7 @@ With the #modu[`control`] and #modu[`data`] ready, let us illustrate the flow of
       _seq("Control", "User", comment: "Return control params", dashed: true)
       _seq("User", "Device", comment: "Execute with params", color: orange)
       _seq("Device", "User", comment: "Return expectation values", dashed: true, color: orange)
-      _seq("User", "Data", comment: [Store row with #func[`make_row`]])
+      _seq("User", "Data", comment: [Store data to #class[`ExperimentalData`]])
     })
 
     // Data management
@@ -463,17 +454,15 @@ With the #modu[`control`] and #modu[`data`] ready, let us illustrate the flow of
       "User",
       "Data",
       comment: [
-        Create #class[ExperimentData] instance
+        Create #class[ExperimentalData] instance
       ],
       color: purple,
     )
     _seq("Data", "Storage", comment: "Save to disk", color: purple)
-    _seq("Storage", "User", comment: [ Load #class[ExperimentData] back], dashed: true, color: purple)
+    _seq("Storage", "User", comment: [ Load #class[ExperimentalData] back], dashed: true, color: purple)
   }),
   caption: [This sequence diagram shows the flow of interaction between the user, `inspeqtor`, quantum device and storage.],
 ) <fig:data-module>
-
-
 
 
 == Physics
@@ -484,8 +473,8 @@ With the #modu[`control`] and #modu[`data`] ready, let us illustrate the flow of
 The main usages of `physics` module can be divivded into two proposes. (1) The first usage is to calculate the unitary propagator given the Hamiltonian and control. The overview flow of `physics` module is illustrate in @fig:physics-module. The second usage is to calculate a physical quantities regulary used in the quantum inforamtion processing such as the fidelity and the state tomography.
 
 #spec[
-  + Solve Schrödinger equation given System Hamiltonian.
-  + Support physical relate functions e.g. @agf, and, tomography.
+  + Solve Schrödinger and Lindblad master equations given System Hamiltonian and collapse operator.
+  + Support physical relate functions e.g. @agf, process fidelity, state fidelity and, tomography.
 ]
 
 #let classy(body) = block(
@@ -503,25 +492,28 @@ The main usages of `physics` module can be divivded into two proposes. (1) The f
 
 #figure(
   diagram(
-    node((0, 0), [#class[`ControlSequence`]], name: <control>),
-    edge("d,r", "->"),
-    node((2, 0), [#class[`QubitInformation`]], name: <control>),
-    edge("d,l", "->"),
-    node((1, 1), [Signal], name: <signal>),
-    edge("->", label: [
-      - #func[`signal_v3`]
-      - #func[`signal_v5`]
-    ]),
-    node((1, 2), [Hamiltonian], name: <hamiltonian>),
-    edge("->", label: [
-      $H(control, t)$
-    ]),
-    node((1, 3), [Transformations], name: <transformation>),
-    edge("->", label: [
-      - #func[`auto_rotating_frame_hamiltonian`]
-      - #func[`detune_x_hamiltonian`]
-    ]),
-    node((1, 4), [Unitary solver], name: <solver>),
+    spacing: (4em, 2em),
+    node-stroke: 1pt,
+    edge-stroke: 1pt,
+
+    // First group: envelope, qubit information, and transformation
+    node((0, 0), [Qubit Information]),
+    edge((0, 0), (0, 1), "->"),
+
+    node((0, 1), [envelope: $bb(R)^n -> (bb(R) -> bb(C))$]),
+    edge((0, 1), (0, 2), "->"),
+
+
+    node((0, 2), align(left)[Transformation such as\ signal function]),
+
+    // Arrow from first group to second group
+    edge((0, 2), (0, 3.5), "->", []),
+
+    // Second group: Hamiltonian and Solver
+    node((0, 3.5), [$cal(H): bb(R)^n times bb(R) -> "Hermitian"(bb(N), bb(C))$]),
+    edge((0, 3.5), (0, 4.5), "->"),
+
+    node((0, 4.5), [Solver]),
   ),
   caption: [Overview of usage flow of `physics` module for unitary calculation.],
   gap: 2em,
@@ -534,51 +526,25 @@ The main usages of `physics` module can be divivded into two proposes. (1) The f
 $
   tilde(U)(bold(Theta); T) approx hat(U)(bold(Theta), T) = cal(T)_+ exp { -i integral_(0)^(T) hat(H)_("total")(bold(Theta) ,s) d s }.
 $
-Usually, the final time $T$ is fixed, so unitary solver is used as a function of control parameters only. Most of the utility functions that provide ready to use solver is also return a solver as a function of control parameters only. However, as we adopt functional programming paradigm, solver is not necessary only a function of control parameters.
+Usually, the final time $T$ is fixed, so unitary solver is used as a function of control parameters only. Most of the utility functions that provide ready to use solver is also return a solver as a function of control parameters only. However, as we adopt functional programming paradigm, solver is not necessary only a function of control parameters. Moreover, we also provide a `lindblad_solver` which solves the Lindblad master equation as given in @eq:master-equation.
 
-For the ODE solver, we use ODE solver from `diffrax`, which is a general purpose package for differential equation solver. This package is one of the package in the `jax` ecosystem. The accuracy of the solution can be set by using `rtol` and `atol` arguments. For the trotterization based solver, we only use the first order approximation, where the step size can be set to adjust the approximation quality. Both of the solver accept Hamiltonian function with the same arguments signature. That is Hamiltonian function is a function of control parameters and time.
+For the ODE solver, we use ODE solver from `diffrax`, which is a general purpose package for differential equation solver. This package is one of the package in the `jax` ecosystem. The accuracy of the solution can be set by using `rtol` and `atol` arguments. For the trotterization based solver, we only use the first order approximation, where the step size can be set to adjust the approximation quality. The solvers accept Hamiltonian function with the same arguments signature. That is Hamiltonian function is a function of control parameters and time,
+$
+  cal(H) ( control: bb(R)^n times t: bb(R) ) -> "Hermitian"(bb(N), bb(C)).
+$
+The Lindblad master equation solver also accept the list of collapse operators ${C_i}_(i)$ which have the same dimension as the Hamiltonian $cal(H)$.
 
 We provide common Hamiltonian of single qubit such as transmon qubit model. We also provide a rotating transmon qubit model which rotate the transmon qubit with the predefined frame analytically. However, in the case that user need to transform the Hamiltonian with another frame, we also provide an automatic transformation function, `auto_rotating_frame_hamiltonian`, that will apply a unitary transformation on the given Hamiltonian with the given frame. The expected usage of the function is as follows,
-```python
-hamiltonian = sq.predefined.transmon_hamiltonian
-frame = 0.73 * sq.constant.Z
-hamiltonian = sq.physics.auto_rotating_frame_hamiltonian(
-	hamiltonian, frame
-)
-```
+#source("hamiltonian")
 The function returns a new function that the output of the original function will be transform with the given frame and returns it as a result.
 
-In the experimental realization, the envelope function returns from #class[`ControlSequence`] may not be a function that is directly used in the Hamiltonian, but it might need to be transform to the form that match the experimental instrument. For example, in the superconducting qubit platform, the envelope function of thhe microwave pulse has to be transformed into signal function and then physically send it to the qubit. `inspeqtor` provides two signal functions that accept different structure of control parameters. The `signal_func_v3` return a signal function that accept control parameters as a list of dict of atomic #class[`Control`] parameters. While, `signal_func_v5` accept control parameters as a flatten `jnp.ndarray`. The former is suitable for the case that xplicitness in control parameters is preferred, while the later favor the ease of utilization with function such as `jax.vmap`. The code snippet demonstrate the expected setup of the Hamiltonian is presented below.
-```python
-qubit_info = sq.predefined.get_mock_qubit_information()
-control_sequence = sq.predefined.get_gaussian_control_sequence(qubit_info=qubit_info)
-dt = 2 / 9
+In the experimental realization, the envelope function returns from #class[`ControlSequence`] may not be a function that is directly used in the Hamiltonian, but it might need to be transform to the form that match the experimental instrument. For example, in the superconducting qubit platform, the envelope function of the microwave pulse has to be transformed into signal function and then physically send it to the qubit. `inspeqtor` provides signal functions that accept different structure of control parameters. We implement a simple signal function. Below, we demonstrate how to use it using the gaussian envelope defined previously.
 
-hamiltonian = partial(
-	sq.predefined.rotating_transmon_hamiltonian,
-	qubit_info=qubit_info,
-	signal=sq.physics.signal_func_v5(
-		get_envelope=sq.predefined.get_envelope_transformer(
-			control_sequence=control_sequence
-		),
-		drive_frequency=qubit_info.frequency,
-		dt=dt,
-	),
-)
+#Cell("signal")
 
-t_eval = jnp.linspace(
-	0, control_sequence.pulse_length_dt * dt, control_sequence.pulse_length_dt
-)
-whitebox = partial(
-	solver,
-	t_eval=t_eval,
-	hamiltonian=hamiltonian,
-	y0=jnp.eye(2, dtype=jnp.complex64),
-	t0=0,
-	t1=control_sequence.pulse_length_dt * dt,
-	max_steps=max_steps,
-)
-```
+The code snippet demonstrate the expected setup of the Hamiltonian is presented below.
+
+#Cell("solver")
 
 Various functions are available in the inspeqtor for the quality assessing related function in quantum experiments. Currently, we support the calculation of single-qubit case @javadi-abhariQuantumComputingQiskit2024. Here are the list of the functions and their description:
 - `gate_fidelity`: Calculate the fidelity between two unitary operators defined as,
@@ -593,13 +559,11 @@ $
 where $F_"process" (hat(U), cal(E))$ is the process fidelity defined in @eq:process-fidelity
 - `to_superop`: Convert a given unitary operator into its superoperator representation using
 $
-  S_hat(U) = hat(U)^(*) times.circle hat(U),
+  S_hat(U) = hat(U)^(*) times.o hat(U),
 $
 which is a tensor product of the conjugate of itself and itself.
-- `state_tomography` Calculate the process tomography using a simple decomposition of a quantum state on the form of the expectation value of observable as follows,
-$
-  rho = 1/2 (I + expval(hat(X)) hat(X) + expval(hat(Y)) hat(Y) + expval(hat(Z)) hat(Z))
-$
+- `state_tomography` Calculate the process tomography using a simple decomposition of a quantum state of $n$-qubit system in terms of the expectation value of observable as
+$ rho = 1/(2^n) sum_i expval(hat(O)_i) hat(O)_i, $ where the index $i$ iterate over the tensor product of Pauli Matrix span the system of qubit.
 - For the direct average gate fidelity esitmation, we design the atomic functions to be composed and a function that can be used repeatedly in the control calibration routine as follows:
   - `direct_AFG_estimation`: This function calculate the @agf as defined in @eq:agf. Its first argument is the result returns from `direct_AFG_estimation_coefficients` which only depends on the references unitary operator. While the second argument is the array of expectation values of observable in the same order of `default_expectation_values_order`.
   - `direct_AGF_estimation_fn`: For a convenient usage, user can also use this function to generate a single argument function (array of expectation values) that will calculate the @agf against the given reference unitary operator. Following is the intended usage
@@ -640,8 +604,7 @@ With this pattern, we can compose the `loss_fn` using predictive model which pro
 ```python
 
 sx_agf = sq.physics.direct_AGF_estimation_fn(sq.constant.SX)
-control_sequence = ...
-whitebox = ...
+ctrl_seq = ...
 predictive_fn = ... # the predictive model.
 
 def loss_fn(params: jnp.ndarray) -> tuple[jnp.ndarray, typing.Any]:
@@ -649,18 +612,18 @@ def loss_fn(params: jnp.ndarray) -> tuple[jnp.ndarray, typing.Any]:
     # Compute the cost.
     return (1 - AGF) ** 2, {"AGF": AGF}
 
-init_params = control_sequence.sample_params(jax.random.key(0))
-lower, upper = control_sequence.get_bounds()
-_ , list_to_array_fn = (
-    sq.control.get_param_array_converter(control_sequence=control_sequence)
+init_params = ctrl_seq.sample_params(jax.random.key(0))
+lower, upper = ctrl_seq.get_bounds()
+ravel_fn , _ = (
+    sq.control.ravel_unravel_fn(ctrl_seq)
 )
 
 res = sq.optimize.minimize(
-    list_to_array_fn(init_params),
+    ravel_fn(init_params),
     jax.jit(loss_fn),
     sq.optimize.get_default_optimizer(1000),
-    list_to_array_fn(lower),
-    list_to_array_fn(upper),
+    ravel_fn(lower),
+    ravel_fn(upper),
 )
 ```
 
@@ -668,7 +631,7 @@ For the #func[`stochastic_minimize`], the loss function receives two arguments. 
 
 === Bayesian Oprimization.
 
-We also support an optimization of Blackbox function, i.e. non-gradient optimization via Bayesian Opitmization. By default, the flow will try to maximize the function. We use #pkg[gpjax] @pinderGPJaxGaussianProcess2022 for Gaussian Process computation, and we built on the algorithms in #pkg[bayex] @alonsoAlonfntBayex2025. 
+We also support an optimization of Blackbox function, i.e. non-gradient optimization via Bayesian Opitmization. By default, the flow will try to maximize the function. We use #pkg[gpjax] @pinderGPJaxGaussianProcess2022 for Gaussian Process computation, and we built on the algorithms in #pkg[bayex] @alonsoAlonfntBayex2025.
 
 
 === Control calibration process
@@ -716,10 +679,12 @@ Let us consider a simple open-loop control calibration pipline using `inspeqtor`
 
 == Models
 #tldr[
-  This module is a collection of the blackbox model implementations. Currently we support `linen` and `nnx` of `flax`. With our unified abstractions, we implement `make_loss_fn` and `create_step` which make up for common training loop with customizability. The interface `*_predictive_fn` for @sgm model allows for utility function such as `make_predictive_resampling_model` which is a SGM-based model-agnostic function. We also provide a common `ModelData` dataclass for saving and loading model parameters.
+  This module contain the implementation of Blackbox model along with the elementary functions to create custom model in both statistical and probabilistic paradigm. Currently we support Blackbox model implement using `linen` and `nnx` of `flax` out of the box. With our unified abstractions, we implement `make_loss_fn` and `create_step` which make up for common training loop with customizability. The interface `*_predictive_fn` for @sgm model allows for utility function such as `make_predictive_resampling_model` which is a SGM-based model-agnostic function. We also provide a common `ModelData` dataclass for saving and loading model parameters.
+
+  Our probabilistic sub-module provide a compatability layer to convert statistical model to the probabilistic model as well as components to create a custom neural network. However, we will discuss it in a @sec:probabilistic-module as it deserves a self-contain presentation.
 ]
 
-The `models` module is a collection of the simple implementation of Blackbox part of the Graybox characterization method. This module serves as an example of how to implement a custom model that compatible with the rest of the `inspeqtor` package. We implement models in the module using #pkg[`flax`], a neural netowrk package in the `jax` ecosystem @jonathanheekFlaxNeuralNetwork2024.
+The `models` module provide component functions to implement Blackbox part of the Graybox characterization method and beyond. The `library` sub-module serves as an example of how to implement a custom model that compatible with the rest of the `inspeqtor` package. We implement models in the module using #pkg[`flax`], a neural netowrk package in the `jax` ecosystem @jonathanheekFlaxNeuralNetwork2024.
 We support both `linen` and `nnx` API of `flax` in the sub-module with the same name. In this section, we will discuss the design decision such as the interface of the functions and models instead of focusing on the actual code implementation, since it will likely change in thte future. Below is the specifications of the module which we aims to follows.
 
 #spec[
@@ -768,13 +733,15 @@ The adapter function responsibles for transforming the output of the model to th
   ],
 ) <tab:predictive-fn>
 
-With the adapter function, we can construct the predictive function as required in specification. In the case that user needed to use the statistical model as a stochastic model, we provide a transform function `sq.probabilistic.make_predictive_resampling_model` that will use the expectation values predicted from the statistical model as a probability to sample from to produce a finite-shot expectation value. This is useful when user want to create a predictive model that intimidate the behavior of real device, or quantify the prediction uncertainty via a Monte-Carlo method.
+With the adapter function, we can construct the predictive function as required in specification. In the case that user needed to use the statistical model as a stochastic model, we provide a transform function `sq.models.probabilistic.make_predictive_resampling_model` that will use the expectation values predicted from the statistical model as a probability to sample from to produce a finite-shot expectation value. This is useful when user want to create a predictive model that intimidate the behavior of real device, or quantify the prediction uncertainty via a Monte-Carlo method.
 
 === Loss function interface
 
-With the selected #func[`adapter_fn`], user can prepare a predefined loss function using #func[`make_loss_fn`]. The returned loss function is compatible with #func[`create_step`]. We predefine the loss function while keeping the flexibility in mind. User can modify the behavior of the loss function by playing with #func[`calculate_metric_fn`]. #func[`calculate_metric_fn`] calculate commons metrics such as (1) mean squared error of predicted and experimental expectation values, (2) absolute error of predicted and experimental @agf and weighted absolute error of predicted and experimental expectation values. First, user can select which metric to be target of minimization. By design, the optimization is perform with batches of data. So, we return the average over batches dimension as a output of the loss function. Furthermore, all of the metrics are returned as the auxillary value and can be easily logged. Second, user can implement their own custom metrics calculation function. #func[`make_loss_fn`] will performs aforementioned averaging and returning metrics too.
-
-In the case that user needs to completely define customized loss function, we refer to #func[`create_step`] source code in each submodules for the required interface of the loss function.
+With the selected #func[`adapter_fn`], user can prepare a predefined loss function using #func[`make_loss_fn`]. The returned loss function is compatible with #func[`create_step`]. We predefine the metric function such as `sq.models.mse` that implements the Mean Squared Error loss function. The metric function can then pass to `evaluate_fn` argument of the #func[`make_loss_fn`]. User can define a custom metric function with the following signature,
+$
+  "metric" (expval(hat(O))^"model":  RR^(n times m) times EE[hat(O)]: RR^(n times m) times U: "Unitary"(N, CC)^n) -> cal(L): RR.
+$
+The first and second arguments are the predicted and experimental expectation values of $m$ combinations of size $n$ samples. The thrid argument is the ideal unitary operators corresponding to each sample.
 
 === Train model
 
@@ -823,7 +790,7 @@ We assume that the first argument is a tuple of arrays. The length of the tuple 
 
 === Serialization and Deserialization
 
-We provide a simple dataclass #class[`sq.model.ModelData`] to save and load a model parameters from disk to memory. User can store a nested dict of strings as keys and values of generic Python types (e.g., `dict`, `list`, `float`, `int`, and `str`) and also `jnp.ndarray`. #class[`ModelData`] is compatible with a probabilistic predictive model, which will be discussed later in @sec:probabilistic-module. Typically, we expect users to store the information necessary to re-instantiate the model without model re-training. Currently, only model configuration and model parameters are two distinctive attributes that the #class[`ModelData`] stores. User can also check #class[`ModelData`] equality by a simple equality check statement `model_1 == model_2`, which will check both configuration and model parameters.
+We provide a simple dataclass #class[`sq.models.ModelData`] to save and load a model parameters from disk to memory. User can store a nested dict of strings as keys and values of generic Python types (e.g., `dict`, `list`, `float`, `int`, and `str`) and also `jnp.ndarray`. #class[`ModelData`] is compatible with a probabilistic predictive model, which will be discussed later in @sec:probabilistic-module. Typically, we expect users to store the information necessary to re-instantiate the model without model re-training. Currently, only model configuration and model parameters are two distinctive attributes that the #class[`ModelData`] stores. User can also check #class[`ModelData`] equality by a simple equality check statement `model_1 == model_2`, which will check both configuration and model parameters.
 
 === Characterization process
 
@@ -909,7 +876,7 @@ There are multiple options to transform DNN to @bnn, e.g. using functions in `nu
 #figure(
   [
     ```python
-    from inspeqtor.experimental.probabilistic import make_flax_probabilistic_graybox_model
+    from inspeqtor.models.probabilistic import make_flax_probabilistic_graybox_model
 
     base_model = ... # Flax model
     adapter_fn = ... # Transformation function
@@ -934,9 +901,9 @@ From the @code:flax-to-bnn, there three variables that user has to appropiately 
 
 Alternatively, user can define a custom @bnn from scratch by using our neural network library implementaion. Our implementation of `dense_layer` which is the building block of @mlp model. The layer uses a specialized matrix multiplication algorithm which handle operations for vectorization of the probabilistic model using `numpyro`. The ability to support vectorization by `numpyro` is necessary for @boed, e.g. algorithm proposed in  @fosterDeepAdaptiveDesign2021.
 
-To take an advantage of using probabilistic machine learning, the predictive function in #modu[`probabilistic`] predicts a binary measurement value by default. We separate the layer of graybox prediction and the compelete predictive function because user do not has to worry about the correct usage of observable in `numpyro`, making debugging easier. Because we will automatically use expectation values predicted by the user supplied predictive model as the probability to sample from the Bernoulli distributions as defined in @eq:bern-based-obs.
+To take an advantage of using probabilistic machine learning, the predictive function in #modu[`probabilistic`] predicts a binary measurement value by default. We separate the layer of graybox prediction and the compelete predictive function because user do not has to worry about the correct usage of observable in `numpyro`, making debugging easier. Because we will automatically use the expectation values predicted by the user-supplied predictive model as the probability to sample from the Bernoulli distributions as defined in @eq:bern-based-obs.
 ```python
-model = sq.probabilistic.make_probabilistic_model(
+model = sq.models.probabilistic.make_probabilistic_model(
     predictive_model=graybox_model,
     shots: int = 1,
     block_graybox: bool = False,
@@ -1056,16 +1023,15 @@ def estimate_eig(
 ```
 User can supply the estimator in the form of a loss function `loss_fn`passed as an argument of #func[`estimate_eig`]. Although, we only support variational marginal estimator currently, we expect the function to be able to used with other estimators. The difference of our implementation and the `pyro.contrib.oed` is that we also support supplement of the additional positional arguments `*args` to the probabilistic model `model`. In our case, we required this functionality for the unitary operators corresponding to the control parameters (`design`). User needs to specify the observed values by using the label `observation_labels` for the estimator to calculate the @eig. The `target_labels` refer to the target parameters that we wish to find the estimate the @eig given the design. However, in the case of the variational marginal estimator, they did not use the target labels in @eig calculation. For the logging purpose, we use callback patterns instead of directly return the list of metrics for each step. Because, the array can be large and consume a lot of computational memory. User can selectively log the metrics as appropiate.
 
-
-== Others
+== Utils
 
 #tldr[
-  This section summarize the modules in `inspeqtor` that are provide utility capabilities and reduce redundance code implementataions.
+  The utils module contains unitility functions and classes useful for data transformations, visualization, common patterns and etc.
 ]
 
-`inspeqtor` aims to be the opinionated characterization and calibration framework. We realize that different harewares have different requirements. Instead of didate every aspect of device characterization and calibration within one pipeline, we defined abstraction of the pipeline and implement useful functions intended for user to compose them freely. While, the abstractions and pipelines we defined serve as checkpoints in which the code implementations are reusable, reproducible and consistent.
+`inspeqtor` aims to be the opinionated characterization and calibration framework. We realize that different harewares have different requirements. Instead of dictate every aspect of device characterization and calibration within one pipeline, we defined abstraction of the pipeline and implement useful functions intended for user to compose them freely. While, the abstractions and pipelines we defined serve as checkpoints in which the code implementations are reusable, reproducible and consistent.
 
-In @tab:modules, we summarize the responsibility of other modules built-in the `inspeqtor`. These modules are intended to be collections of functions that are reused throughout the library.
+In the #modu[`utils`], we define serveral functions and classes for data transformation, visualization, and shortcut to the common usecases. In @tab:utils, we list some of the examples of the functionality expose via #modu[`utils`].
 
 #figure(
   table(
@@ -1073,25 +1039,28 @@ In @tab:modules, we summarize the responsibility of other modules built-in the `
     inset: 8pt,
     align: (left, left),
     stroke: 0.4pt,
-    table.header([*Module*], [*Description*]),
-    [#modu[`constant`]],
-    [Provides constant values used throughout the library to ensure consistency and avoid magic numbers.],
+    table.header([*Goodies*], [*Description*]),
+    [#const[`default_expectation` \ `_values_order`]],
+    [Provides a list of `ExpectationValue` for a single qubit system. The order of the list is what #pkg[`inspeqtor`] usually uses in iteration.],
 
-    [#modu[`utility`]],
-    [Provides utility functions useful for predictive model contrsuction and data preparation and transformation.],
+    [#func[`finite_shot_quantum_device`]],
+    [A function that return finite-shot expectation value given number of shots.],
 
-    [#modu[`predefined`]],
-    [Contains a set of predefined hamiltonians, noise models, controls, experiments, and configurations for common or quick experimental use cases.],
+    [#func[`get_measurement_probability`]],
+    [Calculate the probability of measuring each projector of tensor product of Pauli operators],
 
-    [#modu[`visualization`]],
-    [Includes functions and classes for plotting data and creating various types of visualizations.],
+    [#func[`count_bits`]], [Count the integer representation of bits and return as a dictionary.],
 
-    [#modu[`ctyping`]],
-    [Defines custom data types, protocols, and type hints for static analysis and improved code clarity.],
+    [#func[`prepare_data`]],
+    [Prepare data from the given #func[`ExperimentalData`], #func[`ControlSeqeunce`], and #func[`whitebox`], and return the instance of #class[`LoadedData`]],
 
-    [#modu[`decorator`]], [A set of decorators used to inform information to user.],
+    [#func[`plot_control_envelope`]], [Plot the complex waveform on the given Matplotlib's axes],
+
+    [#func[`plot_expectation_values`]],
+    [Plot the trajectories of the given unitaries operators in terms of the expectation values, currently support only a single qubit unitary operators.],
   ),
   caption: [
-    Descriptions of the auxillary modules in `inspeqtor`.
+    Descriptions of the auxillary modules in `inspeqtor`. Note that, the details may change in the future. We encourage those who are interested in using the package to check out the document.
   ],
-) <tab:modules>
+) <tab:utils>
+

@@ -1,5 +1,5 @@
 #import "../utils.typ": control, todocontinue, todoneedwrite
-#import "@preview/physica:0.9.5": *
+#import "@preview/physica:0.9.7": *
 #import "@preview/drafting:0.2.2": inline-note, margin-note
 #import "../utils.typ": expval, tldr
 #import "@preview/gentle-clues:1.2.0": *
@@ -299,11 +299,11 @@ With @eq:var-data, we know that the expected loss should be at most reduced to $
 
 // The data variance of our dataset is an average of the variance of quantum observable of all combinations, that is,
 // $
-//   1 / 18 sum_(k, rho_0) var (epsilon.alt) = 1 / 18 sum_(k, rho_0) 1 / n (1 - angle.l hat(O)_k angle.r_(rho_0)^2) .
+//   1 / 18 sum_(k, rho_0) var (epsilon.alt) = 1 / 18 sum_(k, rho_0) 1 / n (1 - chevron.l hat(O)_k chevron.r_(rho_0)^2) .
 // $
-// By the normalization condition, given Unitary operator and pure initial state fixed, the Pauli observables are constraint with $angle.l hat(X) angle.r_(rho_0)^2 + angle.l hat(Y) angle.r_(rho_0)^2 + angle.l hat(Z) angle.r_(rho_0)^2 = 1$. Now, we expand the summation of the Pauli observable first,
+// By the normalization condition, given Unitary operator and pure initial state fixed, the Pauli observables are constraint with $chevron.l hat(X) chevron.r_(rho_0)^2 + chevron.l hat(Y) chevron.r_(rho_0)^2 + chevron.l hat(Z) chevron.r_(rho_0)^2 = 1$. Now, we expand the summation of the Pauli observable first,
 // $
-//   1 / 18 sum_(k, rho_0) var (epsilon.alt) = & 1 / (18 n) sum_(rho_0) [3 -(angle.l hat(X) angle.r_(rho_0)^2 + angle.l hat(Y) angle.r_(rho_0)^2 + angle.l hat(Z) angle.r_(rho_0)^2)] \
+//   1 / 18 sum_(k, rho_0) var (epsilon.alt) = & 1 / (18 n) sum_(rho_0) [3 -(chevron.l hat(X) chevron.r_(rho_0)^2 + chevron.l hat(Y) chevron.r_(rho_0)^2 + chevron.l hat(Z) chevron.r_(rho_0)^2)] \
 //   = & 1 / (18 n) sum_(rho_0)(3 - 1) \
 //   = & 2 / (3 n),
 // $
@@ -323,10 +323,10 @@ With @eq:var-data, we know that the expected loss should be at most reduced to $
 
 ==== Performance bound
 
-Let us start with the definition of AGF between an ideal unitary $hat(U)$ parametrized by control variable $#control$ (not shown explicitly) and a map $cal(E)$. Let $rho = |psi angle.r angle.l psi|$ be an arbitrary pure state,
-an average of state fidelity between $hat(U)^dagger |psi angle.r angle.l psi| hat(U)$ and $cal(E) (|psi angle.r angle.l psi|)$ integrating over all possible $|psi angle.r$, which is
+Let us start with the definition of AGF between an ideal unitary $hat(U)$ parametrized by control variable $#control$ (not shown explicitly) and a map $cal(E)$. Let $rho = |psi chevron.r chevron.l psi|$ be an arbitrary pure state,
+an average of state fidelity between $hat(U)^dagger |psi chevron.r chevron.l psi| hat(U)$ and $cal(E) (|psi chevron.r chevron.l psi|)$ integrating over all possible $|psi chevron.r$, which is
 $
-  macron(F)(cal(E), hat(U)) = integral d psi angle.l psi hat(U)^dagger cal(E) (|psi angle.r angle.l psi|) hat(U) |psi angle.r
+  macron(F)(cal(E), hat(U)) = integral d psi chevron.l psi hat(U)^dagger cal(E) (|psi chevron.r chevron.l psi|) hat(U) |psi chevron.r
 $
 
 Typically, we are interested in the case where the map $cal(E)$ is an experimental realization of $hat(U)$.

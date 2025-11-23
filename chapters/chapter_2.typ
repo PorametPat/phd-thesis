@@ -1,4 +1,4 @@
-#import "@preview/physica:0.9.5": *
+#import "@preview/physica:0.9.7": *
 #import "@preview/glossarium:0.5.6": gls
 #import "@preview/drafting:0.2.2": inline-note
 #import "../utils.typ": style, todoneedcite, todoneedwrite
@@ -15,7 +15,8 @@ Proceeding to the unknown territory without necessary knowledges is an unwise de
 
 In a nutshell, quantum information is stored within a *quantum state*. In a digital quantum computer, qubit is a two-level quantum system that act a smallest unit of memory of quantum computer. Mathematically, the single qubit state is defined as
 
-$ ket(psi) = mat(delim: "[", a; b), $
+$ ket(psi) = mat(delim: "[", a; b) = a ket(0) + b ket(1), $
+<eq:quantum-state>
 
 where $abs(a)^2 + abs(b)^2 = 1$. The ket notation used however can only describe a pure quantum state, contained within closed system, i.e. no interaction with an environment. In an open system, the quantum state interacts with the environment, a more general description is a density matrix,
 
@@ -87,7 +88,11 @@ $
 $
 An analytical solution is hard to solve for, we typically need to use numerical method to solve for the solution.
 
-In the open loop system, a different differential equation is needed to describe the dynamics of the system. For example, a Master equation is need to solve for the quantum state in the form of density matrix.
+In the open loop system, a different differential equation is needed to describe the dynamics of the system. For instance, a Linblad Master equation is need to solve for the quantum state in the form of density matrix $rho(t)$. The master equation @lambertQuTiP5Quantum2024 @manzanoShortIntroductionLindblad2020 is a differential equation of the following form,
+$
+  partial / (partial t) rho(t) = -(i / hbar) [H_"ideal" (t), rho(t)] + sum_i 1/2 ( C_i rho(t) C_i^dagger - { C_i^dagger C_i, rho(t) } ).
+$ <eq:master-equation>
+The collapse operator $C_i$ is an operator describe noise such as amplitude damping and dephasing. 
 
 At this level, a time-dependent Hamiltonian can be a function that is controlled by an experiment. For instance, Hamiltonian is controlled by external microwave pulse in the case of superconducting qubit. The Hamiltonian is responsible for generation of quantum logic gate.
 
@@ -120,15 +125,26 @@ In `qiskit` @javadi-abhariQuantumComputingQiskit2024, the signal is defined a fu
 
 The detuning can be in both qubit frequency $omega_q -> omega_q + delta$ and $omega_d -> omega_d + delta$. Note the the detune values can be arbitrary and do not have to be the same value. Detuning can affect the control of the qubit, which can deviate the dynamics of the system in the non-trivial way. The noise can be solve by careful characterization of system parameters in the case of calibrating the control by open-loop approach. Furthermore, one can use specialize optimal control solution to mitigate the noise @laforgueOptimalQuantumControl2022.
 
-In the quantum open system, #todoneedwrite[T1 and T2 noise] (see @krantzQuantumEngineersGuide2019 for great reference) T1 and T2 noise
+In the quantum open system, the noise is not limited to the unwanted Unitary transformation, i.e., unwanted energy transfer within the system, but also the system-environment energy transfer @hashimPracticalIntroductionBenchmarking2025 @krantzQuantumEngineersGuide2019 @guntherQuandaryOpensourcePackage2021. In the Bloch-Redfield model, the noise may characterized by two quantities (1) a longitudinal relaxation rate, 
+$
+  Gamma_1 = 1/T_1,
+$ 
+and (2) a transverse relaxation rate,
+$
+  Gamma_2 = 1/T_2 = Gamma_1/2 + Gamma_phi,
+$
+where $Gamma_phi$ is theh pure depahsing rate. The effect of the noise to the quantum state in @eq:quantum-state can be model in Bloch-Redfield density matrix as,
+$
+  rho_("BR") = mat(1 + (|a|^2 -1 ) e^(-Gamma_1 t), a b^* e^(i delta omega t) e^(-Gamma_2 t); a^* b e^(-i delta omega t) e^(-Gamma_2 t), |b|^2 e^(-Gamma_1 t) ).
+$
 
-The system can also be affected by a *stochastic* noise, such as noise produced by colored noise, which represented by a Power Spectrum Density (PSD) . This type of noise is common in the solid-state qubit, specifically 1/f noise. #todoneedcite This type of noise can be mitigated by specialize control such as Dynamical Decoupling (DD) pulse sequence.
+The system can also be affected by a *stochastic* noise, such as noise produced by colored noise, which represented by a Power Spectrum Density (PSD) . This type of noise is common in the solid-state qubit, specifically 1/f noise.  This type of noise can be characterized and mitigated by specialize control such as Dynamical Decoupling (DD) pulse sequence @alvarezMeasuringSpectrumColored2011 @krantzQuantumEngineersGuide2019 @yanSuppressionDissipationLaserdriven2015.
 
-In the qubit system that realized from energy level of an atom, the state of qubit is then defined as two of its energy levels. The physical realization of control relies the precise specific frequency. However, in the case that the frequency of the control field is deviated from the perfect value, the quantum state might transfer to the undesired level. This noise is referred to as *leakage*. Specialize technique that can mitigate leakage noise is DRAG pulse. #todoneedcite
+In the qubit system that realized from energy level of an atom, the state of qubit is then defined as two of its energy levels. The physical realization of control relies the precise specific frequency. However, in the case that the frequency of the control field is deviated from the perfect value, the quantum state might transfer to the undesired level. This noise is referred to as *leakage*. Specialize technique that can mitigate leakage noise is DRAG pulse @motzoiSimplePulsesElimination2009 @theisCounteractingSystemsDiabaticities2018 @hyyppaReducingLeakageSingleQubit2024.
 
-*Crosstalk* is the noise that the quantum information stored the qubit leak to another qubit instead. This type of noise happens to the system that qubits are connected with each other via some interaction. #todoneedcite
+*Crosstalk* is the noise that the quantum information stored the qubit leak to another qubit instead. This type of noise happens to the system that qubits are connected with each other via some interaction @majumderRealtimeCalibrationSpectator2020 @ash-sakiExperimentalCharacterizationModeling2020 .
 
-In the experimental setup, measurement result from quantum system is a binary result. However, a mis-classification can occur which flip the bit $0 -> 1$ and $1 -> 0$. This can be model as a probability of classical bit-flip error. Several error mitigations techniques #todoneedcite are proposed to mitigate the measurement error.
+In the experimental setup, measurement result from quantum system is a binary result. However, a mis-classification can occur which flip the bit $0 -> 1$ and $1 -> 0$. This can be model as a probability of classical bit-flip error. Several error mitigations techniques @tannuMitigatingMeasurementErrors2019 @gellerRigorousMeasurementError2020 @funckeMeasurementErrorMitigation2022 are proposed to mitigate the measurement error.
 
 === Fidelity
 
@@ -150,7 +166,7 @@ where $S_O$ is a Superoperater representation of operator $hat(O)$ and $d$ is th
 
 In the context of control calibration, we might interested in the low-level control of quantum device that maximize an  *#gls("agf", long: true)* of target quantum gate and quantum channel. Let $hat(U)$ be target Unitary gate, the quantum channel $cal(E)$ realized in experiment, AGF is defined as
 $
-  macron(F)(cal(E), hat(U)) = integral d psi angle.l psi|hat(U)^dagger cal(E)(|psi angle.r angle.l psi|) hat(U)|psi angle.r .
+  macron(F)(cal(E), hat(U)) = integral d psi chevron.l psi|hat(U)^dagger cal(E)(|psi chevron.r chevron.l psi|) hat(U)|psi chevron.r .
 $
 
 From @nielsenSimpleFormulaAverage2002, we can write AGF in the form that is easier to perform experiment. For a single qubit case, AGF can be written as
