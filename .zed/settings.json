@@ -1,1 +1,19 @@
-
+{
+  "lsp": {
+    "tinymist": {
+      "settings": {
+        "exportPdf": "onSave",
+        "outputPath": "$root/$name",
+        "preview": {
+          "browsing": {
+            "args": [
+              "--data-plane-host=127.0.0.1:0",
+              "--invert-colors=auto",
+              "--open"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

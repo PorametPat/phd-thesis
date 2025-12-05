@@ -526,25 +526,6 @@ Promoting @dnn to @bnn seems like an upgrade in a first grace, however, in prati
   #todocontinue[
     Insert section 2B from paper 2 when the paper is submitted.
   ]
-  + For 1000 sample size
-    + Do SGM with WoBased and Unitary
-    + Do PML with WoBased and Unitary
-  + For 100 sample size
-    + Do SGM with WoBased and Unitary
-    + Do PML with WoBased and Unitary
-
-  Note
-  + Unitary seems to perform better than WoBased
-  + For 100 sample size
-    + With WoBased, SGM cannot reach optimal
-    + With Unitary, SGM can reach optimal
-    + With WoBased, PGM win SGM (JSD is lower on average)
-    + With Unitary, SGM win PGM (PGM overfit)
-
-
-  Summary
-  + It might depends on the choice of the Blackbox
-  + Since the probability governs observed data of quantum device is only the expectation value (the Normal distribution's variance is a function of expectation value), so it might sufficient to only use SGM approach since its direct object is to predict true expectation value.
 ]
 
 

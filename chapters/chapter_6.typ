@@ -24,7 +24,7 @@
 
     table.header()[*Tool/Method*][*Data-efficient Approach*][*Flexibility*],
 
-    [#pkg[`inspeqtor`] \ #text(size: 0.85em, fill: gray)[(this research)]],
+    [#pkg[`inspeqtor`] \ #text(size: 0.85em, fill: gray)[(this thesis)]],
     // [#yes],
     [@eig, #cite(<fosterVariationalBayesianOptimal2019>, form: "normal")], [*High*],
 

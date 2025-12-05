@@ -1,7 +1,7 @@
 #import "@preview/drafting:0.2.2": inline-note, margin-note
 #import "@preview/callisto:0.2.4"
 #import "../utils.typ": (
-  class, control, expval, func, meth, modu, pkg, const, spec, style, tldr, tldr2, todocontinue, todoneedwrite,
+  class, const, control, expval, func, meth, modu, pkg, spec, style, tldr, tldr2, todocontinue, todoneedwrite,
 )
 #import "@preview/gentle-clues:1.2.0": *
 #import "@preview/fletcher:0.5.8": diagram, edge, node
@@ -139,6 +139,16 @@ $
 
 We organize #pkg[`inspeqtor`] into multiple modules that provide functionalities for composing a pipeline for characterizing and calibrating the quantum device. To main it intuitive for user, each module aims to provide functions related to its name. The  platform-agnostic functions are exported under the `module` namespace, while the predefined functions for platform specific or common use case are export under the `module.library` namespace. In the case of #modu[`models`], we define extra namespaces to organize the functions under their related `submodule`. Below, we visualize the tree structure of #pkg[`inspeqtor`].
 
+#import "@preview/shadowed:0.2.0": shadowed
+
+#shadowed(
+  radius: 4pt,
+  inset: 12pt,
+)[
+  #set align(center + horizon)
+  #pkg[`inspeqtor`] 
+]
+
 #import "@preview/treet:1.0.0": *
 
 
@@ -198,9 +208,6 @@ We organize #pkg[`inspeqtor`] into multiple modules that provide functionalities
 
 //   _seq("Strategy", "User", comment: "Return Final Characterized Model", dashed: true)
 // })
-
-
-
 
 
 == Why `jax`
@@ -739,7 +746,7 @@ With the adapter function, we can construct the predictive function as required 
 
 With the selected #func[`adapter_fn`], user can prepare a predefined loss function using #func[`make_loss_fn`]. The returned loss function is compatible with #func[`create_step`]. We predefine the metric function such as `sq.models.mse` that implements the Mean Squared Error loss function. The metric function can then pass to `evaluate_fn` argument of the #func[`make_loss_fn`]. User can define a custom metric function with the following signature,
 $
-  "metric" (expval(hat(O))^"model":  RR^(n times m) times EE[hat(O)]: RR^(n times m) times U: "Unitary"(N, CC)^n) -> cal(L): RR.
+  "metric" (expval(hat(O))^"model": RR^(n times m) times EE[hat(O)]: RR^(n times m) times U: "Unitary"(N, CC)^n) -> cal(L): RR.
 $
 The first and second arguments are the predicted and experimental expectation values of $m$ combinations of size $n$ samples. The thrid argument is the ideal unitary operators corresponding to each sample.
 

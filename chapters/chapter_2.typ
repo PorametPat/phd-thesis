@@ -5,57 +5,57 @@
 #import "@preview/gentle-clues:1.2.0": *
 #import "@preview/drafting:0.2.2": inline-note, margin-note
 
-= Before the Journey Begin #emoji.face.wink <sec:before-thejourney-begins>
+= Before the Journey Begins #emoji.face.wink <sec:before-thejourney-begins>
 
-Proceeding to the unknown territory without necessary knowledges is an unwise decision. Thus, I would like to reviews the foundations that we are going to walk forward on. First, basic mathematics formalism used in quantum information is reviewed in @sec:quantum-information, along with the connection to practical usage of current quantum computer. Second, we will discuss how to make quantum computer operate properly in practice in @sec:cc.
+Proceeding to the unknown territory without the necessary knowledge is an unwise decision. Thus, we would like to review the foundations we will walk on. First, the basic mathematical formalism used in quantum information is reviewed in @sec:quantum-information, along with its connection to the practical use of current quantum computers. Second, we will discuss how to make a quantum computer operate properly in practice in @sec:cc.
 
 == Quantum Information <sec:quantum-information>
 
 === Quantum State
 
-In a nutshell, quantum information is stored within a *quantum state*. In a digital quantum computer, qubit is a two-level quantum system that act a smallest unit of memory of quantum computer. Mathematically, the single qubit state is defined as
+In a nutshell, quantum information is stored within a *quantum state*. In a digital quantum computer, a qubit is a two-level quantum system that acts as the smallest unit of memory of a quantum computer. Mathematically, the single-qubit state is defined as
 
 $ ket(psi) = mat(delim: "[", a; b) = a ket(0) + b ket(1), $
 <eq:quantum-state>
 
-where $abs(a)^2 + abs(b)^2 = 1$. The ket notation used however can only describe a pure quantum state, contained within closed system, i.e. no interaction with an environment. In an open system, the quantum state interacts with the environment, a more general description is a density matrix,
+where $abs(a)^2 + abs(b)^2 = 1$. The ket notation used, however, can only describe a pure quantum state within a closed system, i.e., one with no interaction with an environment. In an open system, the quantum state interacts with the environment, and a more general description is a density matrix,
 
 $ rho = sum_i p_i ketbra(psi_i) , $
 
 where $p_(i)$ is a classical probability of pure state $ketbra(psi_i)$.
 
-At the high level, quantum circuit abstraction is a way to reason about operations of the quantum computer. This is a direct analogy to classical circuit that is a building block of operation in a classical computer. Quantum circuit also compose of quantum logic gates as the classical circuit also compose of logic gates. The quantum logic gate can be mathematically represented by Unitary matrix. To perform an arbitrary computation on quantum computer, an universal gateset is needed. There are several choice of the universal gateset. The basis operation required for universal gate typically chosen from single and two qubit gates.
+At a high level, quantum circuit abstraction is a way to reason about the operations of a quantum computer. This abstraction is a direct analogy to a classical circuit, which is a building block of operation in a classical computer. The quantum circuit is composed of quantum logic gates, as is the classical circuit. The quantum logic gate can be mathematically represented by a Unitary matrix. To perform an arbitrary computation on a quantum computer, a universal gateset is needed. There are several choices of the universal gateset. The elementary operations required for a universal gate are typically chosen from single and two-qubit gates.
 
-The example of single gates are
+The examples of single gates are
 $
-  X = mat(
+ X = mat(
     delim: "[", 0, 1;
-    1, 0
+ 1, 0
   ),
-  Y = mat(
+ Y = mat(
     delim: "[", 0, - i;
-    i, 0
+ i, 0
   ),
-  Z = mat(
+ Z = mat(
     delim: "[", 1, 0;
-    0, - 1
+ 0, - 1
   ),
-  H = mat(
+ H = mat(
     delim: "[", 1, 1;
-    1, - 1
+ 1, - 1
   ),
 $
-which are 3 Pauli gates and Hadamard gate respectively. For the two qubit gate, the prime example would be controlled-X gate,
+which are 3 Pauli gates and a Hadamard gate, respectively. For the two-qubit gate, the prime example would be the controlled-X gate,
 $
   upright(C X) = mat(
     delim: "[", 1, 0, 0, 0;
-    0, 1, 0, 0;
-    0, 0, 0, 1;
-    0, 0, 1, 0
+ 0, 1, 0, 0;
+ 0, 0, 0, 1;
+ 0, 0, 1, 0
   ).
 $
 
-The transformation of quantum state by the quantum gate $hat(U)$ can be calculate by matrix multiplication as follow,
+The transformation of the quantum state by the quantum gate $hat(U)$ can be calculated by matrix multiplication as follows,
 $
   ket(psi_f) = hat(U) ket(psi_i),
 $
@@ -64,11 +64,11 @@ $
   rho_f = hat(U) rho_i hat(U)^dagger .
 $
 
-However, in a presence of environment, Unitary operator cannot fully describe a possible transformation cause by noise. Instead of limiting ourself with ideal operation, we can also incorporate noise in the calculation. In that case, we refer to this transformation as a quantum channel. Mathematically, quantum channel could be noisy. In a simple representation, we introduce a set of Kraus operators ${K_0, ..., K_i }$ that satisfying $sum_i K_i^* K_i <= I$, the quantum channel transforming state $rho$ is
+However, in the presence of an environment, a Unitary operator cannot fully describe a possible transformation caused by noise. Instead of limiting ourselves to ideal operation, we can also incorporate noise in the calculation. In that case, we refer to this transformation as a quantum channel. Mathematically, a quantum channel could be noisy. In a simple representation, we introduce a set of Kraus operators ${K_0, ..., K_i }$ that satisfy $sum_i K_i^* K_i <= I$, the quantum channel transforming state $rho$ is
 $
   rho_f -> Phi(rho) = sum_(i) K_(i) rho K_(i)^(*).
 $
-To extract the information from the quantum state, we need to measure the quantum state with selected observable $hat(O)$. Typically, we want to extract information stored in the quantum state $rho$ in the form of expectation value of quantum observable
+To extract the information from the quantum state, we need to measure the quantum state with the selected observable $hat(O)$. Typically, we want to extract information stored in the quantum state $rho$ in the form of the expectation value of a quantum observable
 $
   expval(hat(O)) = Tr [ hat(O) rho ].
 $ <eq:ideal-expval>
@@ -100,9 +100,9 @@ Finally, the expectation value of observable $hat(O)$ can be calculated followin
 
 === Noise
 
-#task[
-  Reviews this @hashimPracticalIntroductionBenchmarking2025
-]
+// #task[
+//   Reviews this @hashimPracticalIntroductionBenchmarking2025
+// ]
 
 Noise is a term that describe the undesired factors that affect the dynamics of the system. In quantum regime, there are several ways to quantify noise in the system. Regardless or the actual physical process that generate noise, we could model the noise in the form that we are interested, and might easier to deal with.
 

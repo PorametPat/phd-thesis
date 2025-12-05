@@ -30,7 +30,7 @@ $
   s(bold(Theta), t) = Re { h(bold(Theta), t) exp(i (2 pi omega_d t + phi)) }
 $
 In our numerical simulation, we test the Graybox performance by considering a scenario with a drift (or mismatch) in the qubit frequency.
-The real value of the qubit frequency denoted by $omega'_q = 5.0005$ GHz is shifted from the value assumed by an experimenter, $omega_q = 5.0$ GHz, by $0.5$ MHz. This way, to simulate the real qubit's dynamics, we use @eq:transmon with $omega'_q$ for the qubit frequency, but $omega_d =  5.0$ GHz for the microwave drive, reflecting the experimenter's wrong assumption about the resonance condition. For the drive strength, we choose $Omega_d = 0.1 "GHz"$, which is similar to the value that we obtain from the IBM-Q's device in the next section. 
+The real value of the qubit frequency denoted by $omega'_q = 5.0005$ GHz is shifted from the value assumed by an experimenter, $omega_q = 5.0$ GHz, by $0.5$ MHz. This way, to simulate the real qubit's dynamics, we use @eq:transmon with $omega'_q$ for the qubit frequency, but $omega_d = 5.0$ GHz for the microwave drive, reflecting the experimenter's wrong assumption about the resonance condition. For the drive strength, we choose $Omega_d = 0.1 "GHz"$, which is similar to the value that we obtain from the IBM-Q's device in the next section.
 
 == Level of Characterization
 
@@ -45,7 +45,7 @@ We now explain in details of each step. The first four steps are the same for ea
 
 *The control:* Motivated by the noise model, we consider a single-parameter control in the Pauli X direction. The control envelope is a Gaussian shape with an area under the curve as a control parameter. The control is a rotation along the X-axis of the Bloch sphere, where the area is the rotation angle. The control is the same as defined in @eq:gaussian-envelope. Thus, we define the `ControlSequence` for inspeqtor using the code snippet defined in @code:gaussian-seqence.
 
-*Perform experiments and save to disk:* For the synthesis dataset, the inspector provides a convenient predefined function `sq.data.library.get_predefined_data_model_m1` to generate the noisy dataset given the system Hamiltonian, the control, and the other necessary information. We use the following code snippet to define the Hamiltonian of the noisy device.
+*Experiments and data storing:* For the synthesis dataset, the inspector provides a convenient predefined function `sq.data.library.get_predefined_data_model_m1` to generate the noisy dataset given the system Hamiltonian, the control, and the other necessary information. We use the following code snippet to define the Hamiltonian of the noisy device.
 
 We define the ideal Hamiltonian first, and will reuse it for the construction of the Whitebox. We then use the ideal Hamiltonian to define the total Hamiltonian. Now, we generete the dataset using the following code snippet.
 #figure(
@@ -408,6 +408,17 @@ We chose test control parameters $theta = {0.0^degree, 35.7^degree, 71.7^degree,
 
 
 We can see from the result in @fig:compare-strategies that subspace strategy can consistancy choose control parameters (i.e. experimental design) that allows model to have performance better than a random strategy on the first few batches. From @fig:eig-example and @fig:control-histogram, we can observe that subspace strategy actively select control parameters near $theta = { 0^degree, 90^degree, 180^degree, 270^degree, 360^degree }$. These subspace dataset is a good starter dataset which allow model to start at a good initial model parameters. However, since the landscape of the @eig does not change significantly, the choice of experiment designs are concentrate at the same points. Consequently, there is no significant performance improvement with additional samples. On the other hand, the random strategy catch up and perform better after more data are collected. However, this strategies does not perfom well at the $theta = 0^degree$ compare to subspace which deliberately choose $theta = 0^degree$. So we consider the alternative strategy with subspace as a first in the sequence. We observe the improvement of the model performance conpare to the pure subspace strategy. The alternative strategy manage to perform well at $theta = 0^degree$ similar to subspace strategy, while we can improve the performance of the model with more samples. Although the improvement is not significant and the random strategy can produce the model that could catch up after more samples, we can see that subspace strategy allow for a better start than random strategy. Furthermore, with alternative strategy, we can see that there are a lot of improvement oppurtinities for more advance strategies.
+
+Note that it is possible that using @eig informed dataset may lead to very biased model, which does not generalize well on unseen data. Furthermore, we have observed a dataset that cause a model to perform worst (i.e., predict very high value of @jsd), please see the source code to see the outliner. In particular, the following command produce outliner,
+```python
+# experiment.py
+trajectory(
+    ["subspace", "random"],
+    exp_id="exp_alter/0005",
+    ikey=5, # The key that cause outliner
+)
+```
+We would like to remark that in the case that the @eig informed strategy causing the model performance to degraded, we can aborad operation early. One possible preventive measure is to mix @eig informed designs with random designs. 
 
 Apart from directly address the possibilities above, there are multiple oppurtinities of improvement. (1) Currently, for each characterization step with addition dataset of subspace model, we did not use posterior distribution from the previous step as a prior but start with the default distribution. So, it is also interesting to explore the use of posterior distribution in the previous step as a prior distribution of model parameters of the next step. (2) It is also interesting open question whether, the bias of the dataset due to @eig, does indeed allow model to learn faster with fewer data points or the model performance is better because there are less things in the dataset (non-uniformness of input feature) for model to learn.
 
