@@ -28,30 +28,30 @@ At a high level, quantum circuit abstraction is a way to reason about the operat
 
 The examples of single gates are
 $
- X = mat(
+  X = mat(
     delim: "[", 0, 1;
- 1, 0
+    1, 0
   ),
- Y = mat(
+  Y = mat(
     delim: "[", 0, - i;
- i, 0
+    i, 0
   ),
- Z = mat(
+  Z = mat(
     delim: "[", 1, 0;
- 0, - 1
+    0, - 1
   ),
- H = mat(
+  H = mat(
     delim: "[", 1, 1;
- 1, - 1
+    1, - 1
   ),
 $
 which are 3 Pauli gates and a Hadamard gate, respectively. For the two-qubit gate, the prime example would be the controlled-X gate,
 $
   upright(C X) = mat(
     delim: "[", 1, 0, 0, 0;
- 0, 1, 0, 0;
- 0, 0, 0, 1;
- 0, 0, 1, 0
+    0, 1, 0, 0;
+    0, 0, 0, 1;
+    0, 0, 1, 0
   ).
 $
 
@@ -76,11 +76,11 @@ $ <eq:ideal-expval>
 === From Hamiltonian to Expectation value <sec:hamiltonian-to-unitary>
 In the lower level than the quantum circuit model, the dynamics of the quantum state are governed by a differential equation (DE). In the closed system, given a Hamiltonian describing the system, $hat(H)(t)$, the quantum state $ket(psi(t))$ can be calculated by solving the Schrödinger equation in the form,
 $
- i hbar partial / (partial t) ket(psi(t)) = hat(H)(t) ket(psi(t)).
+  i hbar partial / (partial t) ket(psi(t)) = hat(H)(t) ket(psi(t)).
 $
 Alternatively, in this thesis, the Unitary operator $hat(U)(t)$ is preferred and can be solved by solving,
 $
- i hbar partial / (partial t)hat(U)(t) = hat(H)(t)hat(U)(t).
+  i hbar partial / (partial t)hat(U)(t) = hat(H)(t)hat(U)(t).
 $
 Generally, the system's Hamiltonian is time-dependent. Thus, the solution is given as a time-ordered operator
 $
@@ -92,7 +92,7 @@ In an open system, a different differential equation is needed to describe its d
 $
   partial / (partial t) rho(t) = -(i / hbar) [H_"ideal" (t), rho(t)] + sum_i 1/2 ( C_i rho(t) C_i^dagger - { C_i^dagger C_i, rho(t) } ).
 $ <eq:master-equation>
-The collapse operator $C_i$ describes noise, such as amplitude damping and dephasing. 
+The collapse operator $C_i$ describes noise, such as amplitude damping and dephasing.
 
 At this level, a time-dependent Hamiltonian can be a function that is controlled by an experiment. For instance, Hamiltonian is controlled by an external microwave pulse in the case of a superconducting qubit. The Hamiltonian generates a quantum logic gate.
 
@@ -125,17 +125,17 @@ In `qiskit` @javadi-abhariQuantumComputingQiskit2024, the signal is defined as a
 
 The detuning can be in both the qubit frequency, $omega_q -> omega_q + delta$, and the detuning, $omega_d -> omega_d + delta$. Note that the detune values can be arbitrary and do not have to be equal. Detuning can affect the control of the qubit, thereby deviating the system's dynamics in a non-trivial way. The noise can be mitigated using control calibration techniques such as DRAG. Furthermore, one can use a specialized optimal control solution to mitigate the noise @laforgueOptimalQuantumControl2022.
 
-In the quantum open system, the noise is not limited to the unwanted Unitary transformation, i.e., unwanted energy transfer within the system, but also the system-environment energy transfer @hashimPracticalIntroductionBenchmarking2025 @krantzQuantumEngineersGuide2019 @guntherQuandaryOpensourcePackage2021. In the Bloch-Redfield model, the noise may be characterized by two quantities: (1) a longitudinal relaxation rate, 
+In the quantum open system, the noise is not limited to the unwanted Unitary transformation, i.e., unwanted energy transfer within the system, but also the system-environment energy transfer @hashimPracticalIntroductionBenchmarking2025 @krantzQuantumEngineersGuide2019 @guntherQuandaryOpensourcePackage2021. In the Bloch-Redfield model, the noise may be characterized by two quantities: (1) a longitudinal relaxation rate,
 $
   Gamma_1 = 1/T_1,
-$ 
+$
 and (2) a transverse relaxation rate,
 $
   Gamma_2 = 1/T_2 = Gamma_1/2 + Gamma_phi,
 $
 where $Gamma_phi$ is the pure depahsing rate. The effect of the noise on the quantum state in @eq:quantum-state can be modeled in the Bloch-Redfield density matrix as,
 $
-  rho_("BR") = mat(1 + (|a|^2 -1 ) e^(-Gamma_1 t), a b^* e^(i delta omega t) e^(-Gamma_2 t); a^* b e^(-i delta omega t) e^(-Gamma_2 t), |b|^2 e^(-Gamma_1 t) ).
+  rho_("BR") = mat(1 + (|a|^2 -1 ) e^(-Gamma_1 t), a b^* e^(i delta omega t) e^(-Gamma_2 t); a^* b e^(-i delta omega t) e^(-Gamma_2 t), |b|^2 e^(-Gamma_1 t)).
 $
 
 The system can also be affected by *stochastic* noise, such as colored noise, which is represented by a Power Spectral Density (PSD). This type of noise is common in the solid-state qubit, specifically 1/f noise. This type of noise can be characterized and mitigated by specialized control such as Dynamical Decoupling (DD) pulse sequence @alvarezMeasuringSpectrumColored2011 @krantzQuantumEngineersGuide2019 @yanSuppressionDissipationLaserdriven2015.
@@ -150,17 +150,17 @@ In the experimental setup, the measurement result from the quantum system is bin
 
 In quantum information, we are often interested in how close a quantum state is to another. The measure of the overlap between two quantum states is state fidelity. The state fidelity between a quantum state $rho$ and $sigma$ is
 $
- F(rho, sigma) = upright(T r) [sqrt(sqrt(rho) sigma sqrt(rho))]^2 .
+  F(rho, sigma) = upright(T r) [sqrt(sqrt(rho) sigma sqrt(rho))]^2 .
 $
 
 In the case where $rho = sigma$, the state fidelity $F(rho, sigma)= 1$, indicating that these two states are the same. In the case where $rho = ketbra(psi)$ and $sigma = ketbra(sigma)$ are pure state, then state fidelity reduces to
 $
- F(ket(psi_rho), ket(psi_sigma)) =|braket(psi, sigma)|^2 .
+  F(ket(psi_rho), ket(psi_sigma)) =|braket(psi, sigma)|^2 .
 $
 
 Fidelity is not limited to the quantum state; we can also measure the closeness between quantum channels. The process fidelity measuring the closeness of quantum channel $hat(U)$ and $cal(E)$ is
 $
- F_("process") (hat(U), cal(E)) = Tr ([S_hat(U)^dagger S_cal(E) ])/d^2,
+  F_("process") (hat(U), cal(E)) = Tr ([S_hat(U)^dagger S_cal(E) ])/d^2,
 $ <eq:process-fidelity>
 where $S_O$ is a Superoperater representation of operator $hat(O)$ and $d$ is the number of basis states of the channel. Process fidelity is especially useful when one needs to measure the quality of a quantum channel in an experiment.
 
@@ -225,7 +225,7 @@ Parameter characterization assumes an explicit mathematical form of the system m
 There are several studies about adaptive experiment characterization of quantum devices. Sarra et al. @sarraDeepBayesianExperimental2023 use Bayesian Optimal Experiment Design to estimate system Hamiltonians. Lennon et al. @lennonEfficientlyMeasuringQuantum2019 use neural networks and information gain approximation techniques for adaptive measurement, selecting points of maximal information gain to characterize quantum dots, improving measurement efficiency by 4 times compared to grid search. Fiderer et al. @fidererNeuralNetworkHeuristicsAdaptive2021 use reinforcement learning to minimize Bayes risk for qubit frequency estimation tasks. Note that these studies focus on the characterization task only.
 
 == C&C Framework
-With regard to the existing C&C framework, `C3` @wittlerIntegratedToolSet2021 is an integrated tool-set to perform control calibration and device characterization using both open-loop and closed-loop techniques. However, it uses a standard optimizer for its algorithms, and it does not focus on being a data-efficient framework. One recent framework, `qibocal` @pasqualeOpensourceFrameworkPerform2024, focuses on being *platform-agnostic*, i.e., API remains the same regardless of the target quantum device platform. However, it again does not focus on data utilization efficiency. While QCtrl's Boulder Opal @BoulderOpal is production-ready software with a study about a data-efficient characterization approach @staceOptimizedBayesianSystem2024a, it is a closed-source package.
+With regard to the existing C&C framework, `C3` @wittlerIntegratedToolSet2021 is an integrated tool-set to perform control calibration and device characterization using both open-loop and closed-loop techniques. However, it uses a standard optimizer for its algorithms, and it does not focus on being a data-efficient framework. One recent framework, `qibocal` @pasqualeOpensourceFrameworkPerform2024, focuses on being *platform-agnostic*, i.e., API remains the same regardless of the target quantum device platform. However, it again does not focus on data utilization efficiency. While QCtrl's Boulder Opal @BoulderOpal is production-ready software with a study about a data-efficient characterization approach @staceOptimizedBayesianSystem2024, it is a closed-source package.
 
 == The notion of "Data Efficiency" <sec:data-efficient-notion>
 
@@ -260,6 +260,6 @@ After we estimate the @eig for the given experiment design, we have to decide wh
 
 As discussed earlier, greedily experimenting with a design that maximizes the @eig at the current step does not necessarily maximize the total @eig of the sequential experiments setting. To tackle the problem of sequential experiment design @rainforthModernBayesianExperimental2024, recent studies have proposed the use of @dnn to predict the next experimental design @fosterDeepAdaptiveDesign2021 @ivanovaImplicitDeepAdaptive2021. The @dnn is learn by minimizing the lower bound of the total @eig. However, this approach requires significant computational power during @dnn training. While at the deployment time, the next design can be efficiently determined. The concept of using @dnn to make a decision on what is the next experiment design to perform in the context of quantum characterization is explored in @fidererNeuralNetworkHeuristicsAdaptive2021, but they did not use the result presented in @fosterDeepAdaptiveDesign2021 @ivanovaImplicitDeepAdaptive2021; instead, they optimize the @dnn using Bayes risk (their source code is not easy to use.)
 
-Alternatively to the @eig, #cite(<staceOptimizedBayesianSystem2024a>, form: "prose") proposes the OBSID algorithm for performing a sequential experiment. They used a particle filter to sample from the posterior distribution. They experiment with designs that minimize cost functions based on anticipated posterior covariance and modified Fisher information. There are some disadvantages in using Fisher information compared to @eig @rainforthModernBayesianExperimental2024. For example, since the Fisher Information Matrix is a matrix, one has to optimize the summary statistics rather than fully characterize the statistics as @eig.
+Alternatively to the @eig, #cite(<staceOptimizedBayesianSystem2024>, form: "prose") proposes the OBSID algorithm for performing a sequential experiment. They used a particle filter to sample from the posterior distribution. They experiment with designs that minimize cost functions based on anticipated posterior covariance and modified Fisher information. There are some disadvantages in using Fisher information compared to @eig @rainforthModernBayesianExperimental2024. For example, since the Fisher Information Matrix is a matrix, one has to optimize the summary statistics rather than fully characterize the statistics as @eig.
 
 

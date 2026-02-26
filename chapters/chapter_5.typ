@@ -30,7 +30,7 @@ $
  s(bold(Theta), t) = Re { h(bold(Theta), t) exp(i (2 pi omega_d t + phi)) }
 $
 In our numerical simulation, we test the Graybox performance by considering a scenario with a drift (or mismatch) in the qubit frequency.
-The real value of the qubit frequency denoted by $omega'_q = 5.0005$ GHz is shifted from the value assumed by an experimenter, $omega_q = 5.0$ GHz, by $0.5$ MHz. This way, to simulate the real qubit's dynamics, we use @eq:transmon with $omega'_q$ for the qubit frequency, but $omega_d = 5.0$ GHz for the microwave drive, reflecting the experimenter's wrong assumption about the resonance condition. For the drive strength, we choose $Omega_d = 0.1 "GHz"$, which is similar to the value that we obtain from the IBM-Q's device in the next section.
+The real value of the qubit frequency denoted by $omega'_q = 5.0005$ GHz is shifted from the value assumed by an experimenter, $omega_q = 5.0$ GHz, by $0.5$ MHz. This way, to simulate the real qubit's dynamics, we use @eq:transmon with $omega'_q$ for the qubit frequency, but $omega_d = 5.0$ GHz for the microwave drive, reflecting the experimenter's wrong assumption about the resonance condition. For the drive strength, we choose $Omega_d = 0.1 "GHz"$.
 
 == Level of Characterization
 

@@ -44,10 +44,6 @@ Machine learning is a field of study to model a system of interest without expli
 
 == The Way of Statistical Machine Learning <sec:sml-way>
 
-#todocontinue[
-  Check grammar from here for @sec:sml-way and @sec:pml-way.
-]
-
 By itself, @sml does not provide a tool that can be used with @boed out of the box, but it is certain to pave the way toward an elegant tool. Also, it is simple, easy to understand, and computationally inexpensive in the early days of characterizing quantum devices. Thus, from the development point of view, starting our journal here would be considered a solid step along this path.
 
 In literature @p.murphyProbabilisticMachineLearning2023, a term *predictive model* is referred to a function that given $bold(x)$, predict output $y$, formally $y = f(bold(x))$ that is constructed from some dataset. In our context, characterizing quantum device is to construct a *predictive model* from the data obtain from experiment. In the information point of view, we extract the information of the system via experiment, encode it to a model, then we can predict the output of the target device using the model instead of perform new experiment on the target device. I will refer a procedure of estimating predictive model from dataset by the word train / fit / estimate / construct. Given large enough dataset, we can fit the model with high accuracy. However, if we have to spend much of a resource to characterize the device, it would be impractical. Thus, characterizing quantum device by exploit the knowledge of quantum mechanics and system we use to minimize the resource needed to construct an expensive model is preferred.
@@ -526,7 +522,7 @@ Promoting @dnn to @bnn seems like an upgrade in a first grace, however, in prati
 
 #task[
   #todocontinue[
-    Insert section 2B from paper 2 when the paper is submitted.
+    Insert section 2B from paper 2 when the paper is published?.
   ]
 ]
 

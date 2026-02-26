@@ -42,7 +42,7 @@
 
     [#pkg[QCtrl Boulder Opal] #cite(<BoulderOpal>, form: "normal") \ #text(size: 0.8em, fill: gray)[(closed-source)]],
     // [#yes],
-    [OBSID #cite(<staceOptimizedBayesianSystem2024a>, form: "normal")], [*High*],
+    [OBSID #cite(<staceOptimizedBayesianSystem2024>, form: "normal")], [*High*],
 
     [#cite(<fidererNeuralNetworkHeuristicsAdaptive2021>, form: "prose")],
     // [#no],

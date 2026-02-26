@@ -477,7 +477,7 @@ With the #modu[`control`] and #modu[`data`] ready, let us illustrate the flow of
   The `physics` module is a collection of intense physics-related functions. This module includes Unitary solvers based on ODE and the Trotterization method. It has utility functions such as an automatic rotating transformation function given Hamiltonian and frame, and functions to calculate fidelity metrics.
 ]
 
-The main usages of the `physics` module can be divided into two purposes. (1) The first usage is to calculate the unitary propagator given the Hamiltonian and control. The overview flow of the `physics` module is illustrated in @ @fig:physics-module. The second usage is to calculate physical quantities regularly used in quantum information processing, such as the fidelity and the state tomography.
+The main usages of the `physics` module can be divided into two purposes. (1) The first usage is to calculate the unitary propagator given the Hamiltonian and control. The overview flow of the `physics` module is illustrated in @fig:physics-module. The second usage is to calculate physical quantities regularly used in quantum information processing, such as the fidelity and the state tomography.
 
 #spec[
   + Solve Schrödinger and Lindblad master equations given the system Hamiltonian and collapse operator.
@@ -799,7 +799,7 @@ We provide a simple dataclass #class[`sq.models.ModelData`] to save and load mod
 
 === Characterization process
 
-With the #modu[models] ready, we illustrate how users can use our library to build predictive models. Consider a simple model training loop without the hyperparameter tuning, we show a sequence diagram for the pipeline in @fig:models-module. The pipeline can be used for hyperparameter tuning in a straightforward manner. It is up to the user to design the library for the hyperparameter tuning task, for example, #pkg[`ray-tune`] @raytune, and #pkg[`optuna`] @optuna_2019.
+With the #modu[models] ready, we illustrate how users can use our library to build predictive models. Consider a simple model training loop without the hyperparameter tuning, we show a sequence diagram for the pipeline in @fig:models-module. The pipeline can be used for hyperparameter tuning in a straightforward manner. It is up to the user to design the library for the hyperparameter tuning task, for example, #pkg[`ray-tune`] @liawTuneResearchPlatform2018, and #pkg[`optuna`] @akibaOptunaNextgenerationHyperparameter2019.
 
 #figure(
   chronos.diagram({
